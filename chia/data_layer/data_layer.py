@@ -11,7 +11,6 @@ from chia.server.server import ChiaServer
 from chia.types.blockchain_format.sized_bytes import bytes32
 from chia.util.config import load_config
 from chia.util.db_wrapper import DBWrapper
-from chia.util.ints import uint64
 from chia.util.path import mkdir, path_from_root
 from chia.wallet.wallet_node import WalletNode
 
@@ -71,10 +70,9 @@ class DataLayer:
         self.data_store = await DataStore.create(self.db_wrapper)
         assert self.wallet_node.wallet_state_manager
         main_wallet = self.wallet_node.wallet_state_manager.main_wallet
-        amount = uint64(1)  # todo what should amount be ?
         async with self.wallet_node.wallet_state_manager.lock:
             creation_record = await self.wallet.create_new_dl_wallet(
-                self.wallet_node.wallet_state_manager, main_wallet, amount, None
+                self.wallet_node.wallet_state_manager, main_wallet, None
             )
             self.wallet = creation_record.item
         self.initialized = True

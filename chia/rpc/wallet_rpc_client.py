@@ -293,7 +293,7 @@ class WalletRpcClient(RpcClient):
     async def dl_current_root(self, wallet_id: str) -> bytes32:
         request = {"wallet_id": int(wallet_id)}
         response = await self.fetch("dl_current_root", request)
-        return hexstr_to_bytes(response["root"])
+        return bytes32(hexstr_to_bytes(response["root"]))
 
     async def dl_update_root(self, wallet_id: str, root: bytes32) -> TransactionRecord:
         request = {"wallet_id": int(wallet_id), "root": root.hex()}
