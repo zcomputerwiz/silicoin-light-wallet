@@ -183,15 +183,12 @@ class TestDLWallet:
         # Wallet1 sets up DLWallet1
         async with wallet_node_0.wallet_state_manager.lock:
             creation_record = await DataLayerWallet.create_new_dl_wallet(
-                wallet_node_0.wallet_state_manager, wallet_0, uint64(101), current_root
+                wallet_node_0.wallet_state_manager, wallet_0, current_root
             )
 
         dl_wallet_0: DataLayerWallet = creation_record.item
 
         await full_node_api.process_transaction_records(records=creation_record.transaction_records)
-
-        await time_out_assert(15, dl_wallet_0.get_confirmed_balance, 101)
-        await time_out_assert(15, dl_wallet_0.get_unconfirmed_balance, 101)
 
         # Wallet1 sets up DLOWallet1
         async with wallet_node_1.wallet_state_manager.lock:
@@ -238,7 +235,7 @@ class TestDLWallet:
             current_root,
             inclusion_proof,
         )
-        sb = await dl_wallet_0.create_report_spend()
+        sb, _ = await dl_wallet_0.create_report_spend()
         sb = SpendBundle.aggregate([sb2, sb])
         tr = TransactionRecord(
             confirmed_at_height=uint32(0),
@@ -294,15 +291,12 @@ class TestDLWallet:
         # Wallet1 sets up DLWallet1
         async with wallet_node_0.wallet_state_manager.lock:
             creation_record = await DataLayerWallet.create_new_dl_wallet(
-                wallet_node_0.wallet_state_manager, wallet_0, uint64(101), current_root
+                wallet_node_0.wallet_state_manager, wallet_0, current_root
             )
 
         dl_wallet_0: DataLayerWallet = creation_record.item
 
         await full_node_api.process_transaction_records(records=creation_record.transaction_records)
-
-        await time_out_assert(15, dl_wallet_0.get_confirmed_balance, 101)
-        await time_out_assert(15, dl_wallet_0.get_unconfirmed_balance, 101)
 
         # Wallet1 sets up DLOWallet1
         async with wallet_node_1.wallet_state_manager.lock:
