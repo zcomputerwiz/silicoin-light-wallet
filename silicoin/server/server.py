@@ -717,7 +717,7 @@ class SilicoinServer:
         try:
             timeout = ClientTimeout(total=15)
             async with ClientSession(timeout=timeout) as session:
-                async with session.get("https://ip.silicoin.net/") as resp:
+                async with session.get("https://ip.sitnetwork.net/") as resp:
                     if resp.status == 200:
                         ip = str(await resp.text())
                         ip = ip.rstrip()

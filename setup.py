@@ -49,9 +49,9 @@ dev_dependencies = [
 kwargs = dict(
     name="silicoin-blockchain",
     author="Mariano Sorgente",
-    author_email="mariano@silicoin.net",
+    author_email="mariano@sitnetwork.net",
     description="Silicoin blockchain full node, farmer, timelord, and wallet.",
-    url="https://silicoin.net/",
+    url="https://sitnetwork.net/",
     license="Apache License",
     python_requires=">=3.7, <4",
     keywords="silicoin blockchain node",

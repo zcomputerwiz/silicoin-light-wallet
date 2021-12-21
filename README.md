@@ -1,6 +1,6 @@
 # silicoin-blockchain
 
-![Alt text](https://www.silicoin.net/img/silicoin_logo.svg)
+![Alt text](https://www.sitnetwork.net/img/silicoin_logo.svg)
 
 | Current Release/main | Development Branch/dev |
 |         :---:          |          :---:         |
