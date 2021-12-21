@@ -88,13 +88,13 @@ main.sym
 *.recompiled
 
 # Dev config react
-# chia-blockchain-gui/src/dev_config.js
+# silicoin-light-gui/src/dev_config.js
 # React built app
-chia-blockchain-gui/.eslintcache
-chia-blockchain-gui/build
+silicoin-light-gui/.eslintcache
+silicoin-light-gui/build
 build_scripts/dist
 build_scripts/*.Dmg
-chia-blockchain-gui/src/locales/_build
+silicoin-light-gui/src/locales/_build
 build_scripts\win_build
 build_scripts/win_build
 win_code_sign_cert.p12

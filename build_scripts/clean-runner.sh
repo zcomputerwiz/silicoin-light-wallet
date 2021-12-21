@@ -9,11 +9,11 @@ rm -rf chia_blockchain.egg-info || true
 rm -rf build_scripts/final_installer || true
 rm -rf build_scripts/dist || true
 rm -rf build_scripts/pyinstaller || true
-rm -rf chia-blockchain-gui/build || true
-rm -rf chia-blockchain-gui/daemon || true
-rm -rf chia-blockchain-gui/node_modules || true
-rm chia-blockchain-gui/temp.json || true
-( cd "$PWD/chia-blockchain-gui" && git checkout HEAD -- package-lock.json ) || true
+rm -rf silicoin-light-gui/build || true
+rm -rf silicoin-light-gui/daemon || true
+rm -rf silicoin-light-gui/node_modules || true
+rm silicoin-light-gui/temp.json || true
+( cd "$PWD/silicoin-light-gui" && git checkout HEAD -- package-lock.json ) || true
 cd "$PWD" || true
 
 # Do our best to get rid of any globally installed notarize-cli versions so the version in the current build script is

@@ -39,9 +39,9 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 	echo >&2 "pyinstaller failed!"
 	exit $LAST_EXIT_CODE
 fi
-cp -r dist/daemon ../chia-blockchain-gui/packages/wallet
+cp -r dist/daemon ../silicoin-light-gui/packages/wallet
 cd .. || exit
-cd chia-blockchain-gui || exit
+cd silicoin-light-gui || exit
 
 echo "npm build"
 npm install
