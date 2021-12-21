@@ -15,7 +15,7 @@ jobs:
   build:
     name: Linux ARM64 installer on Python 3.8
     runs-on: [ARM64]
-    container: silicoinnetwork/ubuntu-18.04-builder:latest
+    container: chianetwork/ubuntu-18.04-builder:latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -30,7 +30,7 @@ jobs:
       with:
         access_token: ${{ github.token }}
 
-    - uses: Silicoin-Network/actions/clean-workspace@main
+    - uses: Chia-Network/actions/clean-workspace@main
 
     - name: Checkout Code
       uses: actions/checkout@v2

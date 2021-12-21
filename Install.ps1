@@ -47,8 +47,8 @@ py -m venv venv
 py -m pip install pip --upgrade
 pip install --upgrade setuptools
 pip install --upgrade wheel
-pip install --extra-index-url https://pypi.silicoin.net/simple/ miniupnpc==2.2.2
-pip install --editable . --extra-index-url https://pypi.silicoin.net/simple/
+pip install --extra-index-url https://pypi.chia.net/simple/ miniupnpc==2.2.2
+pip install --editable . --extra-index-url https://pypi.chia.net/simple/
 
 Write-Output ""
 Write-Output "Silicoin blockchain .\Install.ps1 complete."

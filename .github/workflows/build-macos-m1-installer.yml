@@ -28,7 +28,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-      - uses: Silicoin-Network/actions/clean-workspace@main
+      - uses: Chia-Network/actions/clean-workspace@main
 
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - uses: Silicoin-Network/actions/git-ssh-to-https@main
+      - uses: Chia-Network/actions/git-ssh-to-https@main
 
       - name: Cleanup any leftovers that exist from previous runs
         run: bash build_scripts/clean-runner.sh || true
