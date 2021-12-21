@@ -6,9 +6,9 @@ import tempfile
 from concurrent.futures.process import ProcessPoolExecutor
 from typing import IO, List, Tuple, Optional
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.constants import ConsensusConstants
-from chia.full_node.weight_proof import (
+from silicoin.consensus.block_record import BlockRecord
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.full_node.weight_proof import (
     _validate_sub_epoch_summaries,
     vars_to_bytes,
     validate_sub_epoch_sampling,
@@ -17,19 +17,19 @@ from chia.full_node.weight_proof import (
     chunks,
     _validate_vdf_batch,
 )
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from silicoin.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 
-from chia.types.weight_proof import (
+from silicoin.types.weight_proof import (
     WeightProof,
 )
 
-from chia.util.ints import uint32
+from silicoin.util.ints import uint32
 
 log = logging.getLogger(__name__)
 
 
 def _create_shutdown_file() -> IO:
-    return tempfile.NamedTemporaryFile(prefix="chia_executor_shutdown_trigger")
+    return tempfile.NamedTemporaryFile(prefix="silicoin_executor_shutdown_trigger")
 
 
 class WalletWeightProofHandler:

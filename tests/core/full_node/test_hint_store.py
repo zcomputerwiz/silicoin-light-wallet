@@ -3,12 +3,12 @@ import logging
 import pytest
 from clvm.casts import int_to_bytes
 
-from chia.consensus.blockchain import Blockchain
-from chia.full_node.hint_store import HintStore
-from chia.types.blockchain_format.coin import Coin
-from chia.types.condition_opcodes import ConditionOpcode
-from chia.types.condition_with_args import ConditionWithArgs
-from chia.types.spend_bundle import SpendBundle
+from silicoin.consensus.blockchain import Blockchain
+from silicoin.full_node.hint_store import HintStore
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.condition_opcodes import ConditionOpcode
+from silicoin.types.condition_with_args import ConditionWithArgs
+from silicoin.types.spend_bundle import SpendBundle
 from tests.util.db_connection import DBConnection
 from tests.wallet_tools import WalletTool
 from tests.setup_nodes import bt

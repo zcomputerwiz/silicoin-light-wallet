@@ -1,7 +1,7 @@
 import unittest
 from blspy import AugSchemeMPL
-from chia.util import cached_bls
-from chia.util.lru_cache import LRUCache
+from silicoin.util import cached_bls
+from silicoin.util.lru_cache import LRUCache
 
 
 class TestCachedBLS(unittest.TestCase):

@@ -7,30 +7,30 @@ import blspy
 from blspy import G1Element, G2Element
 from chiabip158 import PyBIP158
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.block_rewards import calculate_base_farmer_reward, calculate_pool_reward
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.consensus.coinbase import create_farmer_coin, create_pool_coin
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.cost_calculator import NPCResult, calculate_cost_of_program
-from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions
-from chia.full_node.signage_point import SignagePoint
-from chia.types.blockchain_format.coin import Coin, hash_coin_list
-from chia.types.blockchain_format.foliage import Foliage, FoliageBlockData, FoliageTransactionBlock, TransactionsInfo
-from chia.types.blockchain_format.pool_target import PoolTarget
-from chia.types.blockchain_format.proof_of_space import ProofOfSpace
-from chia.types.blockchain_format.reward_chain_block import RewardChainBlock, RewardChainBlockUnfinished
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.vdf import VDFInfo, VDFProof
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.types.full_block import FullBlock
-from chia.types.generator_types import BlockGenerator
-from chia.types.unfinished_block import UnfinishedBlock
-from chia.util.hash import std_hash
-from chia.util.ints import uint8, uint32, uint64, uint128
-from chia.util.merkle_set import MerkleSet
-from chia.util.prev_transaction_block import get_prev_transaction_block
-from chia.util.recursive_replace import recursive_replace
+from silicoin.consensus.block_record import BlockRecord
+from silicoin.consensus.block_rewards import calculate_base_farmer_reward, calculate_pool_reward
+from silicoin.consensus.blockchain_interface import BlockchainInterface
+from silicoin.consensus.coinbase import create_farmer_coin, create_pool_coin
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.consensus.cost_calculator import NPCResult, calculate_cost_of_program
+from silicoin.full_node.mempool_check_conditions import get_name_puzzle_conditions
+from silicoin.full_node.signage_point import SignagePoint
+from silicoin.types.blockchain_format.coin import Coin, hash_coin_list
+from silicoin.types.blockchain_format.foliage import Foliage, FoliageBlockData, FoliageTransactionBlock, TransactionsInfo
+from silicoin.types.blockchain_format.pool_target import PoolTarget
+from silicoin.types.blockchain_format.proof_of_space import ProofOfSpace
+from silicoin.types.blockchain_format.reward_chain_block import RewardChainBlock, RewardChainBlockUnfinished
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.vdf import VDFInfo, VDFProof
+from silicoin.types.end_of_slot_bundle import EndOfSubSlotBundle
+from silicoin.types.full_block import FullBlock
+from silicoin.types.generator_types import BlockGenerator
+from silicoin.types.unfinished_block import UnfinishedBlock
+from silicoin.util.hash import std_hash
+from silicoin.util.ints import uint8, uint32, uint64, uint128
+from silicoin.util.merkle_set import MerkleSet
+from silicoin.util.prev_transaction_block import get_prev_transaction_block
+from silicoin.util.recursive_replace import recursive_replace
 
 log = logging.getLogger(__name__)
 

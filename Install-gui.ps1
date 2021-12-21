@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 
 if ($null -eq (Get-ChildItem env:VIRTUAL_ENV -ErrorAction SilentlyContinue))
 {
-    Write-Output "This script requires that the Chia Python virtual environment is activated."
+    Write-Output "This script requires that the Silicoin Python virtual environment is activated."
     Write-Output "Execute '.\venv\Scripts\Activate.ps1' before running."
     Exit 1
 }
@@ -17,7 +17,7 @@ Write-Output "Running 'git submodule update --init --recursive'."
 Write-Output ""
 git submodule update --init --recursive
 
-Set-Location chia-blockchain-gui
+Set-Location silicoin-blockchain-gui
 
 $ErrorActionPreference = "SilentlyContinue"
 npm install --loglevel=error
@@ -26,6 +26,6 @@ npm run build
 py ..\installhelper.py
 
 Write-Output ""
-Write-Output "Chia blockchain Install-gui.ps1 completed."
+Write-Output "Silicoin blockchain Install-gui.ps1 completed."
 Write-Output ""
-Write-Output "Type 'cd chia-blockchain-gui' and then 'npm run electron' to start the GUI."
+Write-Output "Type 'cd silicoin-blockchain-gui' and then 'npm run electron' to start the GUI."

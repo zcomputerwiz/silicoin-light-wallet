@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from chia.types.blockchain_format.slots import (
+from silicoin.types.blockchain_format.slots import (
     ChallengeChainSubSlot,
     InfusedChallengeChainSubSlot,
     RewardChainSubSlot,
     SubSlotProofs,
 )
-from chia.util.streamable import Streamable, streamable
+from silicoin.util.streamable import Streamable, streamable
 
 
 @dataclass(frozen=True)

@@ -2,21 +2,21 @@ from typing import Dict, List, Optional, Tuple, Any
 
 from blspy import AugSchemeMPL, G2Element, PrivateKey
 
-from chia.consensus.constants import ConsensusConstants
-from chia.util.hash import std_hash
-from chia.types.announcement import Announcement
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.coin_spend import CoinSpend
-from chia.types.condition_opcodes import ConditionOpcode
-from chia.types.condition_with_args import ConditionWithArgs
-from chia.types.spend_bundle import SpendBundle
-from chia.util.clvm import int_from_bytes, int_to_bytes
-from chia.util.condition_tools import conditions_by_opcode, conditions_for_solution
-from chia.util.ints import uint32, uint64
-from chia.wallet.derive_keys import master_sk_to_wallet_sk
-from chia.wallet.puzzles.p2_delegated_puzzle_or_hidden_puzzle import (
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.util.hash import std_hash
+from silicoin.types.announcement import Announcement
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import Program
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.types.condition_opcodes import ConditionOpcode
+from silicoin.types.condition_with_args import ConditionWithArgs
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.util.clvm import int_from_bytes, int_to_bytes
+from silicoin.util.condition_tools import conditions_by_opcode, conditions_for_solution
+from silicoin.util.ints import uint32, uint64
+from silicoin.wallet.derive_keys import master_sk_to_wallet_sk
+from silicoin.wallet.puzzles.p2_delegated_puzzle_or_hidden_puzzle import (
     DEFAULT_HIDDEN_PUZZLE_HASH,
     calculate_synthetic_secret_key,
     puzzle_for_pk,

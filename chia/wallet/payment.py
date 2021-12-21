@@ -2,9 +2,9 @@ from dataclasses import dataclass
 
 from typing import Optional, List
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.program import Program
-from chia.util.ints import uint64
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.program import Program
+from silicoin.util.ints import uint64
 
 
 # This class is supposed to correspond to a CREATE_COIN condition

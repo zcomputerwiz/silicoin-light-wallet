@@ -1,11 +1,11 @@
 import asyncio
 import socket
 
-from chia.server.server import ChiaServer
-from chia.types.peer_info import PeerInfo
+from silicoin.server.server import SilicoinServer
+from silicoin.types.peer_info import PeerInfo
 
 
-def start_reconnect_task(server: ChiaServer, peer_info_arg: PeerInfo, log, auth: bool):
+def start_reconnect_task(server: SilicoinServer, peer_info_arg: PeerInfo, log, auth: bool):
     """
     Start a background task that checks connection and reconnects periodically to a peer.
     """

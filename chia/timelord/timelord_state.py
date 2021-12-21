@@ -1,16 +1,16 @@
 import logging
 from typing import List, Optional, Tuple, Union
 
-from chia.consensus.constants import ConsensusConstants
-from chia.protocols import timelord_protocol
-from chia.timelord.iters_from_block import iters_from_block
-from chia.timelord.types import Chain, StateType
-from chia.types.blockchain_format.classgroup import ClassgroupElement
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.slots import ChallengeBlockInfo
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.util.ints import uint8, uint32, uint64, uint128
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.protocols import timelord_protocol
+from silicoin.timelord.iters_from_block import iters_from_block
+from silicoin.timelord.types import Chain, StateType
+from silicoin.types.blockchain_format.classgroup import ClassgroupElement
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.slots import ChallengeBlockInfo
+from silicoin.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from silicoin.types.end_of_slot_bundle import EndOfSubSlotBundle
+from silicoin.util.ints import uint8, uint32, uint64, uint128
 
 log = logging.getLogger(__name__)
 

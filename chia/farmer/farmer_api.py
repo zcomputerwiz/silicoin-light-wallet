@@ -5,26 +5,26 @@ from typing import Callable, Optional, List, Any, Dict, Tuple
 import aiohttp
 from blspy import AugSchemeMPL, G2Element, PrivateKey
 
-import chia.server.ws_connection as ws
-from chia.consensus.network_type import NetworkType
-from chia.consensus.pot_iterations import calculate_iterations_quality, calculate_sp_interval_iters
-from chia.farmer.farmer import Farmer
-from chia.protocols import farmer_protocol, harvester_protocol
-from chia.protocols.harvester_protocol import PoolDifficulty
-from chia.protocols.pool_protocol import (
+import silicoin.server.ws_connection as ws
+from silicoin.consensus.network_type import NetworkType
+from silicoin.consensus.pot_iterations import calculate_iterations_quality, calculate_sp_interval_iters
+from silicoin.farmer.farmer import Farmer
+from silicoin.protocols import farmer_protocol, harvester_protocol
+from silicoin.protocols.harvester_protocol import PoolDifficulty
+from silicoin.protocols.pool_protocol import (
     get_current_authentication_token,
     PoolErrorCode,
     PostPartialRequest,
     PostPartialPayload,
 )
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.server.outbound_message import NodeType, make_msg
-from chia.server.server import ssl_context_for_root
-from chia.ssl.create_ssl import get_mozilla_ca_crt
-from chia.types.blockchain_format.pool_target import PoolTarget
-from chia.types.blockchain_format.proof_of_space import ProofOfSpace
-from chia.util.api_decorators import api_request, peer_required
-from chia.util.ints import uint32, uint64
+from silicoin.protocols.protocol_message_types import ProtocolMessageTypes
+from silicoin.server.outbound_message import NodeType, make_msg
+from silicoin.server.server import ssl_context_for_root
+from silicoin.ssl.create_ssl import get_mozilla_ca_crt
+from silicoin.types.blockchain_format.pool_target import PoolTarget
+from silicoin.types.blockchain_format.proof_of_space import ProofOfSpace
+from silicoin.util.api_decorators import api_request, peer_required
+from silicoin.util.ints import uint32, uint64
 
 
 def strip_old_entries(pairs: List[Tuple[float, Any]], before: float) -> List[Tuple[float, Any]]:
@@ -49,7 +49,7 @@ class FarmerAPI:
     @api_request
     @peer_required
     async def new_proof_of_space(
-        self, new_proof_of_space: harvester_protocol.NewProofOfSpace, peer: ws.WSChiaConnection
+        self, new_proof_of_space: harvester_protocol.NewProofOfSpace, peer: ws.WSSilicoinConnection
     ):
         """
         This is a response from the harvester, for a NewChallenge. Here we check if the proof
@@ -511,5 +511,5 @@ class FarmerAPI:
 
     @api_request
     @peer_required
-    async def respond_plots(self, _: harvester_protocol.RespondPlots, peer: ws.WSChiaConnection):
+    async def respond_plots(self, _: harvester_protocol.RespondPlots, peer: ws.WSSilicoinConnection):
         self.farmer.log.warning(f"Respond plots came too late from: {peer.get_peer_logging()}")

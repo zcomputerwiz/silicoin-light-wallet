@@ -1,10 +1,10 @@
 from clvm_tools import binutils
 
-from chia.types.blockchain_format.program import Program, INFINITE_COST
-from chia.types.announcement import Announcement
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.condition_tools import parse_sexp_to_conditions
-from chia.wallet.puzzles.load_clvm import load_clvm
+from silicoin.types.blockchain_format.program import Program, INFINITE_COST
+from silicoin.types.announcement import Announcement
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.util.condition_tools import parse_sexp_to_conditions
+from silicoin.wallet.puzzles.load_clvm import load_clvm
 
 SINGLETON_MOD = load_clvm("singleton_top_layer.clvm")
 LAUNCHER_PUZZLE = load_clvm("singleton_launcher.clvm")

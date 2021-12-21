@@ -8,37 +8,37 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 
 from clvm.casts import int_from_bytes
 
-from chia.consensus.block_body_validation import validate_block_body
-from chia.consensus.block_header_validation import validate_finished_header_block, validate_unfinished_header_block
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.cost_calculator import NPCResult
-from chia.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_difficulty
-from chia.consensus.find_fork_point import find_fork_point_in_chain
-from chia.consensus.full_block_to_block_record import block_to_block_record
-from chia.consensus.multiprocess_validation import PreValidationResult, pre_validate_blocks_multiprocessing
-from chia.full_node.block_store import BlockStore
-from chia.full_node.coin_store import CoinStore
-from chia.full_node.hint_store import HintStore
-from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from chia.types.blockchain_format.vdf import VDFInfo
-from chia.types.coin_record import CoinRecord
-from chia.types.condition_opcodes import ConditionOpcode
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.types.full_block import FullBlock
-from chia.types.generator_types import BlockGenerator, GeneratorArg
-from chia.types.header_block import HeaderBlock
-from chia.types.unfinished_block import UnfinishedBlock
-from chia.types.unfinished_header_block import UnfinishedHeaderBlock
-from chia.types.weight_proof import SubEpochChallengeSegment
-from chia.util.errors import Err
-from chia.util.generator_tools import get_block_header, tx_removals_and_additions
-from chia.util.ints import uint16, uint32, uint64, uint128
-from chia.util.streamable import recurse_jsonify
+from silicoin.consensus.block_body_validation import validate_block_body
+from silicoin.consensus.block_header_validation import validate_finished_header_block, validate_unfinished_header_block
+from silicoin.consensus.block_record import BlockRecord
+from silicoin.consensus.blockchain_interface import BlockchainInterface
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.consensus.cost_calculator import NPCResult
+from silicoin.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_difficulty
+from silicoin.consensus.find_fork_point import find_fork_point_in_chain
+from silicoin.consensus.full_block_to_block_record import block_to_block_record
+from silicoin.consensus.multiprocess_validation import PreValidationResult, pre_validate_blocks_multiprocessing
+from silicoin.full_node.block_store import BlockStore
+from silicoin.full_node.coin_store import CoinStore
+from silicoin.full_node.hint_store import HintStore
+from silicoin.full_node.mempool_check_conditions import get_name_puzzle_conditions
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from silicoin.types.blockchain_format.vdf import VDFInfo
+from silicoin.types.coin_record import CoinRecord
+from silicoin.types.condition_opcodes import ConditionOpcode
+from silicoin.types.end_of_slot_bundle import EndOfSubSlotBundle
+from silicoin.types.full_block import FullBlock
+from silicoin.types.generator_types import BlockGenerator, GeneratorArg
+from silicoin.types.header_block import HeaderBlock
+from silicoin.types.unfinished_block import UnfinishedBlock
+from silicoin.types.unfinished_header_block import UnfinishedHeaderBlock
+from silicoin.types.weight_proof import SubEpochChallengeSegment
+from silicoin.util.errors import Err
+from silicoin.util.generator_tools import get_block_header, tx_removals_and_additions
+from silicoin.util.ints import uint16, uint32, uint64, uint128
+from silicoin.util.streamable import recurse_jsonify
 
 log = logging.getLogger(__name__)
 

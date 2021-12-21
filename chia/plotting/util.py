@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Tuple, Union
 from blspy import G1Element, PrivateKey
 from chiapos import DiskProver
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.config import load_config, save_config
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.util.config import load_config, save_config
 
 log = logging.getLogger(__name__)
 

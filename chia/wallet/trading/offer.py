@@ -2,23 +2,23 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict, Set, Tuple
 from blspy import G2Element
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program
-from chia.types.announcement import Announcement
-from chia.types.coin_spend import CoinSpend
-from chia.types.spend_bundle import SpendBundle
-from chia.util.ints import uint64
-from chia.wallet.cc_wallet.cc_utils import (
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import Program
+from silicoin.types.announcement import Announcement
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.util.ints import uint64
+from silicoin.wallet.cc_wallet.cc_utils import (
     CC_MOD,
     SpendableCC,
     construct_cc_puzzle,
     match_cat_puzzle,
     unsigned_spend_bundle_for_spendable_ccs,
 )
-from chia.wallet.lineage_proof import LineageProof
-from chia.wallet.puzzles.load_clvm import load_clvm
-from chia.wallet.payment import Payment
+from silicoin.wallet.lineage_proof import LineageProof
+from silicoin.wallet.puzzles.load_clvm import load_clvm
+from silicoin.wallet.payment import Payment
 
 OFFER_MOD = load_clvm("settlement_payments.clvm")
 ZERO_32 = bytes32([0] * 32)

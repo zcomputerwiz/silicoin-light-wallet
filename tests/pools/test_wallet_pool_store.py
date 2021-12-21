@@ -7,14 +7,14 @@ import aiosqlite
 import pytest
 from clvm_tools import binutils
 
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program, SerializedProgram
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.coin_spend import CoinSpend
-from chia.util.db_wrapper import DBWrapper
-from chia.util.ints import uint64
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import Program, SerializedProgram
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.util.db_wrapper import DBWrapper
+from silicoin.util.ints import uint64
 
-from chia.wallet.wallet_pool_store import WalletPoolStore
+from silicoin.wallet.wallet_pool_store import WalletPoolStore
 
 
 @pytest.fixture(scope="module")

@@ -5,14 +5,14 @@ from pathlib import Path
 import aiosqlite
 import pytest
 
-from chia.consensus.blockchain import ReceiveBlockResult
-from chia.protocols import full_node_protocol
-from chia.types.blockchain_format.vdf import VDFProof
-from chia.types.weight_proof import WeightProof
-from chia.util.db_wrapper import DBWrapper
-from chia.util.generator_tools import get_block_header
-from chia.wallet.key_val_store import KeyValStore
-from chia.wallet.wallet_blockchain import WalletBlockchain
+from silicoin.consensus.blockchain import ReceiveBlockResult
+from silicoin.protocols import full_node_protocol
+from silicoin.types.blockchain_format.vdf import VDFProof
+from silicoin.types.weight_proof import WeightProof
+from silicoin.util.db_wrapper import DBWrapper
+from silicoin.util.generator_tools import get_block_header
+from silicoin.wallet.key_val_store import KeyValStore
+from silicoin.wallet.wallet_blockchain import WalletBlockchain
 from tests.setup_nodes import test_constants, setup_node_and_wallet
 
 

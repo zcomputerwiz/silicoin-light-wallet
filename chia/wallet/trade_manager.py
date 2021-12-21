@@ -3,25 +3,25 @@ import time
 import traceback
 from typing import Any, Dict, List, Optional, Tuple, Union, Set
 
-from chia.protocols.wallet_protocol import CoinState
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.spend_bundle import SpendBundle
-from chia.util.db_wrapper import DBWrapper
-from chia.util.hash import std_hash
-from chia.util.ints import uint32, uint64
-from chia.wallet.cc_wallet.cc_wallet import CCWallet
-from chia.wallet.payment import Payment
-from chia.wallet.trade_record import TradeRecord
-from chia.wallet.trading.offer import Offer, NotarizedPayment
-from chia.wallet.trading.trade_status import TradeStatus
-from chia.wallet.trading.trade_store import TradeStore
-from chia.wallet.transaction_record import TransactionRecord
-from chia.wallet.util.transaction_type import TransactionType
-from chia.wallet.util.wallet_types import WalletType
-from chia.wallet.wallet import Wallet
-from chia.wallet.wallet_coin_record import WalletCoinRecord
+from silicoin.protocols.wallet_protocol import CoinState
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import Program
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.util.db_wrapper import DBWrapper
+from silicoin.util.hash import std_hash
+from silicoin.util.ints import uint32, uint64
+from silicoin.wallet.cc_wallet.cc_wallet import CCWallet
+from silicoin.wallet.payment import Payment
+from silicoin.wallet.trade_record import TradeRecord
+from silicoin.wallet.trading.offer import Offer, NotarizedPayment
+from silicoin.wallet.trading.trade_status import TradeStatus
+from silicoin.wallet.trading.trade_store import TradeStore
+from silicoin.wallet.transaction_record import TransactionRecord
+from silicoin.wallet.util.transaction_type import TransactionType
+from silicoin.wallet.util.wallet_types import WalletType
+from silicoin.wallet.wallet import Wallet
+from silicoin.wallet.wallet_coin_record import WalletCoinRecord
 
 
 class TradeManager:

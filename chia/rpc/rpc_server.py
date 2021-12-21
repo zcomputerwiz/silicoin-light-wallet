@@ -7,13 +7,13 @@ from typing import Any, Callable, Dict, List, Optional
 
 import aiohttp
 
-from chia.server.outbound_message import NodeType
-from chia.server.server import ssl_context_for_server
-from chia.types.peer_info import PeerInfo
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint16
-from chia.util.json_util import dict_to_json_str, obj_to_response
-from chia.util.ws_message import create_payload, create_payload_dict, format_response, pong
+from silicoin.server.outbound_message import NodeType
+from silicoin.server.server import ssl_context_for_server
+from silicoin.types.peer_info import PeerInfo
+from silicoin.util.byte_types import hexstr_to_bytes
+from silicoin.util.ints import uint16
+from silicoin.util.json_util import dict_to_json_str, obj_to_response
+from silicoin.util.ws_message import create_payload, create_payload_dict, format_response, pong
 
 log = logging.getLogger(__name__)
 

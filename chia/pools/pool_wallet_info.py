@@ -4,13 +4,13 @@ from typing import Optional, Dict
 
 from blspy import G1Element
 
-from chia.protocols.pool_protocol import POOL_PROTOCOL_VERSION
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint32, uint8
-from chia.util.streamable import streamable, Streamable
+from silicoin.protocols.pool_protocol import POOL_PROTOCOL_VERSION
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import Program
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.util.byte_types import hexstr_to_bytes
+from silicoin.util.ints import uint32, uint8
+from silicoin.util.streamable import streamable, Streamable
 
 
 class PoolSingletonState(IntEnum):
