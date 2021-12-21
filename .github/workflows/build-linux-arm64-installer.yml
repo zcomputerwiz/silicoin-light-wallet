@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - protocol_and_cats_rebased
+      - pacr-dev
     tags:
       - '**'
   pull_request:
@@ -97,10 +97,10 @@ jobs:
     #   if: steps.check_secrets.outputs.HAS_SECRET
     #   run: |
     #       aws s3 cp "$GITHUB_WORKSPACE/build_scripts/final_installer/silicoin-blockchain_${SILICOIN_INSTALLER_VERSION}_arm64.deb" s3://download-silicoin-net/builds/
-    #       aws s3 cp $GITHUB_WORKSPACE/build_scripts/final_installer/silicoin-blockchain_${SILICOIN_INSTALLER_VERSION}_arm64.deb s3://download-silicoin-net/protocol_and_cats_rebased/
+    #       aws s3 cp $GITHUB_WORKSPACE/build_scripts/final_installer/silicoin-blockchain_${SILICOIN_INSTALLER_VERSION}_arm64.deb s3://download-silicoin-net/pacr-dev/
 
     - name: Create Checksums
-      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/protocol_and_cats_rebased'
+      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pacr-dev'
       env:
         SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
       run: |
@@ -130,7 +130,7 @@ jobs:
     #     aws s3 cp $GITHUB_WORKSPACE/build_scripts/final_installer/silicoin-blockchain_${SILICOIN_INSTALLER_VERSION}_arm64.deb.sha256 s3://download-silicoin-net/beta/silicoin-blockchain_arm64_latest_beta.deb.sha256
 
     # - name: Upload CATs Beta Installer
-    #   if: steps.check_secrets.outputs.HAS_SECRET && github.ref == 'refs/heads/protocol_and_cats_rebased'
+    #   if: steps.check_secrets.outputs.HAS_SECRET && github.ref == 'refs/heads/pacr-dev'
     #   env:
     #     SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
     #   run: |

@@ -6,7 +6,7 @@ name: MacOS TEST_NAME Tests
 on:
   push:
     branches:
-      - protocol_and_cats_rebased
+      - pacr-dev
     tags:
         - '**'
   pull_request:

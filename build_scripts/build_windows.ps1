@@ -131,7 +131,7 @@ Write-Output "node winstaller.js"
 node winstaller.js
 Write-Output "   ---"
 
-# Specific to protocol_and_cats_rebased branch, move these directories to where they used to be so the rest of the CI
+# Specific to pacr-dev branch, move these directories to where they used to be so the rest of the CI
 # finds them where it expects to
 Copy-Item "Silicoin-win32-x64" -Destination "..\..\" -Recurse
 Copy-Item "release-builds" -Destination "..\..\" -Recurse

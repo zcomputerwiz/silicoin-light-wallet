@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - protocol_and_cats_rebased
+      - pacr-dev
     tags:
       - '**'
   pull_request:
@@ -144,7 +144,7 @@ jobs:
     #   run: |
     #     ls ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\
     #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/builds/
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/protocol_and_cats_rebased/
+    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/pacr-dev/
 
     - name: Create Checksums
       env:
@@ -173,7 +173,7 @@ jobs:
     #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256 s3://download-silicoin-net/beta/SilicoinSetup-latest-beta.exe.sha256
 
     # - name: Upload CATs Beta Installer
-    #   if: steps.check_secrets.outputs.HAS_AWS_SECRET && github.ref == 'refs/heads/protocol_and_cats_rebased'
+    #   if: steps.check_secrets.outputs.HAS_AWS_SECRET && github.ref == 'refs/heads/pacr-dev'
     #   env:
     #     SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
     #   run: |
