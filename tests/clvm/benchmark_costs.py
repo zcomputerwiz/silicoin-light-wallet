@@ -1,10 +1,10 @@
-from chia.types.blockchain_format.program import INFINITE_COST
-from chia.types.spend_bundle import SpendBundle
-from chia.types.generator_types import BlockGenerator
-from chia.consensus.cost_calculator import calculate_cost_of_program, NPCResult
-from chia.consensus.default_constants import DEFAULT_CONSTANTS
-from chia.full_node.bundle_tools import simple_solution_generator
-from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions
+from silicoin.types.blockchain_format.program import INFINITE_COST
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.types.generator_types import BlockGenerator
+from silicoin.consensus.cost_calculator import calculate_cost_of_program, NPCResult
+from silicoin.consensus.default_constants import DEFAULT_CONSTANTS
+from silicoin.full_node.bundle_tools import simple_solution_generator
+from silicoin.full_node.mempool_check_conditions import get_name_puzzle_conditions
 
 
 def cost_of_spend_bundle(spend_bundle: SpendBundle) -> int:

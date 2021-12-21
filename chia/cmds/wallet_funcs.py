@@ -7,27 +7,27 @@ from typing import Callable, List, Optional, Tuple, Dict
 
 import aiohttp
 
-from chia.cmds.units import units
-from chia.rpc.wallet_rpc_client import WalletRpcClient
-from chia.server.start_wallet import SERVICE_NAME
-from chia.util.bech32m import encode_puzzle_hash
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.config import load_config
-from chia.util.default_root import DEFAULT_ROOT_PATH
-from chia.util.ints import uint16, uint64
-from chia.wallet.transaction_record import TransactionRecord
-from chia.wallet.util.wallet_types import WalletType
+from silicoin.cmds.units import units
+from silicoin.rpc.wallet_rpc_client import WalletRpcClient
+from silicoin.server.start_wallet import SERVICE_NAME
+from silicoin.util.bech32m import encode_puzzle_hash
+from silicoin.util.byte_types import hexstr_to_bytes
+from silicoin.util.config import load_config
+from silicoin.util.default_root import DEFAULT_ROOT_PATH
+from silicoin.util.ints import uint16, uint64
+from silicoin.wallet.transaction_record import TransactionRecord
+from silicoin.wallet.util.wallet_types import WalletType
 
 
 def print_transaction(tx: TransactionRecord, verbose: bool, name) -> None:
     if verbose:
         print(tx)
     else:
-        chia_amount = Decimal(int(tx.amount)) / units["chia"]
+        silicoin_amount = Decimal(int(tx.amount)) / units["silicoin"]
         to_address = encode_puzzle_hash(tx.to_puzzle_hash, name)
         print(f"Transaction {tx.name}")
         print(f"Status: {'Confirmed' if tx.confirmed else ('In mempool' if tx.is_in_mempool() else 'Pending')}")
-        print(f"Amount {'sent' if tx.sent else 'received'}: {chia_amount} {name}")
+        print(f"Amount {'sent' if tx.sent else 'received'}: {silicoin_amount} {name}")
         print(f"To address: {to_address}")
         print("Created at:", datetime.fromtimestamp(tx.created_at_time).strftime("%Y-%m-%d %H:%M:%S"))
         memos_dict = tx.get_memos()
@@ -108,12 +108,12 @@ async def send(args: dict, wallet_client: WalletRpcClient, fingerprint: int) -> 
 
     summaries_response = await wallet_client.get_wallets()
     final_amount: Optional[uint64] = None
-    final_fee = uint64(int(fee * units["chia"]))
+    final_fee = uint64(int(fee * units["silicoin"]))
     for summary in summaries_response:
         if int(wallet_id) == int(summary["id"]):
             typ: WalletType = WalletType(int(summary["type"]))
             if typ == WalletType.STANDARD_WALLET:
-                final_amount = uint64(int(amount * units["chia"]))
+                final_amount = uint64(int(amount * units["silicoin"]))
                 print("Submitting transaction...")
                 res = await wallet_client.send_transaction(wallet_id, final_amount, address, final_fee, memos)
                 break
@@ -135,11 +135,11 @@ async def send(args: dict, wallet_client: WalletRpcClient, fingerprint: int) -> 
         tx = await wallet_client.get_transaction(wallet_id, tx_id)
         if len(tx.sent_to) > 0:
             print(f"Transaction submitted to nodes: {tx.sent_to}")
-            print(f"Do chia wallet get_transaction -f {fingerprint} -tx 0x{tx_id} to get status")
+            print(f"Do silicoin wallet get_transaction -f {fingerprint} -tx 0x{tx_id} to get status")
             return None
 
     print("Transaction not yet submitted to nodes")
-    print(f"Do 'chia wallet get_transaction -f {fingerprint} -tx 0x{tx_id}' to get status")
+    print(f"Do 'silicoin wallet get_transaction -f {fingerprint} -tx 0x{tx_id}' to get status")
 
 
 async def get_address(args: dict, wallet_client: WalletRpcClient, fingerprint: int) -> None:
@@ -174,7 +174,7 @@ def wallet_coin_unit(typ: WalletType, address_prefix: str) -> Tuple[str, int]:
     if typ == WalletType.COLOURED_COIN:
         return "", units["colouredcoin"]
     if typ in [WalletType.STANDARD_WALLET, WalletType.POOLING_WALLET, WalletType.MULTI_SIG, WalletType.RATE_LIMITED]:
-        return address_prefix, units["chia"]
+        return address_prefix, units["silicoin"]
     return "", units["mojo"]
 
 
@@ -220,7 +220,7 @@ async def get_wallet(wallet_client: WalletRpcClient, fingerprint: int = None) ->
     else:
         fingerprints = await wallet_client.get_public_keys()
     if len(fingerprints) == 0:
-        print("No keys loaded. Run 'chia keys generate' or import a key")
+        print("No keys loaded. Run 'silicoin keys generate' or import a key")
         return None
     if len(fingerprints) == 1:
         fingerprint = fingerprints[0]
@@ -253,7 +253,7 @@ async def get_wallet(wallet_client: WalletRpcClient, fingerprint: int = None) ->
             use_cloud = True
             if "backup_path" in log_in_response:
                 path = log_in_response["backup_path"]
-                print(f"Backup file from backup.chia.net downloaded and written to: {path}")
+                print(f"Backup file from backup.silicoin.net downloaded and written to: {path}")
                 val = input("Do you want to use this file to restore from backup? (Y/N) ")
                 if val.lower() == "y":
                     log_in_response = await wallet_client.log_in_and_restore(fingerprint, path)
@@ -308,7 +308,7 @@ async def execute_with_wallet(
         if isinstance(e, aiohttp.ClientConnectorError):
             print(
                 f"Connection error. Check if the wallet is running at {wallet_rpc_port}. "
-                "You can run the wallet via:\n\tchia start wallet"
+                "You can run the wallet via:\n\tsilicoin start wallet"
             )
         else:
             print(f"Exception from 'wallet' {e}")

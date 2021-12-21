@@ -36,7 +36,7 @@ jobs:
         fetch-depth: 0
         submodules: recursive
 
-    - uses: Chia-Network/actions/git-ssh-to-https@main
+    - uses: Silicoin-Network/actions/git-ssh-to-https@main
 
     - name: Cleanup any leftovers that exist from previous runs
       run: bash build_scripts/clean-runner.sh || true
@@ -117,5 +117,5 @@ jobs:
     - name: Upload MacOS artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: Chia-Installer-on-MacOS-10.15-dmg
+        name: Silicoin-Installer-on-MacOS-10.15-dmg
         path: ${{ github.workspace }}/build_scripts/final_installer/

@@ -1,13 +1,13 @@
 from typing import Callable, Optional
 
-from chia.introducer.introducer import Introducer
-from chia.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.server.outbound_message import Message, make_msg
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.peer_info import TimestampedPeerInfo
-from chia.util.api_decorators import api_request, peer_required
-from chia.util.ints import uint64
+from silicoin.introducer.introducer import Introducer
+from silicoin.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
+from silicoin.protocols.protocol_message_types import ProtocolMessageTypes
+from silicoin.server.outbound_message import Message, make_msg
+from silicoin.server.ws_connection import WSSilicoinConnection
+from silicoin.types.peer_info import TimestampedPeerInfo
+from silicoin.util.api_decorators import api_request, peer_required
+from silicoin.util.ints import uint64
 
 
 class IntroducerAPI:
@@ -24,7 +24,7 @@ class IntroducerAPI:
     async def request_peers_introducer(
         self,
         request: RequestPeersIntroducer,
-        peer: WSChiaConnection,
+        peer: WSSilicoinConnection,
     ) -> Optional[Message]:
         max_peers = self.introducer.max_peers_to_send
         if self.introducer.server is None or self.introducer.server.introducer_peers is None:

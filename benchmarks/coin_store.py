@@ -3,18 +3,18 @@ import random
 import secrets
 from time import time
 from pathlib import Path
-from chia.full_node.coin_store import CoinStore
+from silicoin.full_node.coin_store import CoinStore
 from typing import List, Tuple
 import os
 import sys
 
 import aiosqlite
-from chia.util.db_wrapper import DBWrapper
-from chia.consensus.coinbase import create_farmer_coin, create_pool_coin
-from chia.consensus.default_constants import DEFAULT_CONSTANTS
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.coin import Coin
-from chia.util.ints import uint64, uint32
+from silicoin.util.db_wrapper import DBWrapper
+from silicoin.consensus.coinbase import create_farmer_coin, create_pool_coin
+from silicoin.consensus.default_constants import DEFAULT_CONSTANTS
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.util.ints import uint64, uint32
 
 
 NUM_ITERS = 200

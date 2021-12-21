@@ -10,22 +10,22 @@ from typing import Callable, Dict, List, Optional, Set, Tuple, Union, Any
 from blspy import PrivateKey, AugSchemeMPL
 from packaging.version import Version
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.blockchain import ReceiveBlockResult
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.find_fork_point import find_fork_point_in_chain
-from chia.daemon.keychain_proxy import (
+from silicoin.consensus.block_record import BlockRecord
+from silicoin.consensus.blockchain import ReceiveBlockResult
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.consensus.find_fork_point import find_fork_point_in_chain
+from silicoin.daemon.keychain_proxy import (
     KeychainProxyConnectionFailure,
     connect_to_keychain_and_validate,
     wrap_local_keychain,
     KeychainProxy,
     KeyringIsEmpty,
 )
-from chia.full_node.weight_proof import chunks
-from chia.protocols import wallet_protocol
-from chia.protocols.full_node_protocol import RequestProofOfWeight, RespondProofOfWeight
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.protocols.wallet_protocol import (
+from silicoin.full_node.weight_proof import chunks
+from silicoin.protocols import wallet_protocol
+from silicoin.protocols.full_node_protocol import RequestProofOfWeight, RespondProofOfWeight
+from silicoin.protocols.protocol_message_types import ProtocolMessageTypes
+from silicoin.protocols.wallet_protocol import (
     RespondToCoinUpdates,
     CoinState,
     RespondToPhUpdates,
@@ -40,37 +40,37 @@ from chia.protocols.wallet_protocol import (
     RequestHeaderBlocks,
     RespondHeaderBlocks,
 )
-from chia.server.node_discovery import WalletPeers
-from chia.server.outbound_message import Message, NodeType, make_msg
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from chia.types.coin_spend import CoinSpend
-from chia.types.header_block import HeaderBlock
-from chia.types.mempool_inclusion_status import MempoolInclusionStatus
-from chia.types.peer_info import PeerInfo
-from chia.types.weight_proof import WeightProof, SubEpochData
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint32, uint64
-from chia.util.keychain import KeyringIsLocked
-from chia.util.path import mkdir, path_from_root
-from chia.wallet.block_record import HeaderBlockRecord
-from chia.wallet.derivation_record import DerivationRecord
-from chia.wallet.util.transaction_type import TransactionType
-from chia.wallet.util.wallet_sync_utils import (
+from silicoin.server.node_discovery import WalletPeers
+from silicoin.server.outbound_message import Message, NodeType, make_msg
+from silicoin.server.server import SilicoinServer
+from silicoin.server.ws_connection import WSSilicoinConnection
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.types.header_block import HeaderBlock
+from silicoin.types.mempool_inclusion_status import MempoolInclusionStatus
+from silicoin.types.peer_info import PeerInfo
+from silicoin.types.weight_proof import WeightProof, SubEpochData
+from silicoin.util.byte_types import hexstr_to_bytes
+from silicoin.util.ints import uint32, uint64
+from silicoin.util.keychain import KeyringIsLocked
+from silicoin.util.path import mkdir, path_from_root
+from silicoin.wallet.block_record import HeaderBlockRecord
+from silicoin.wallet.derivation_record import DerivationRecord
+from silicoin.wallet.util.transaction_type import TransactionType
+from silicoin.wallet.util.wallet_sync_utils import (
     validate_additions,
     validate_removals,
     request_and_validate_removals,
     request_and_validate_additions,
 )
-from chia.wallet.wallet_coin_record import WalletCoinRecord
-from chia.wallet.wallet_state_manager import WalletStateManager
-from chia.wallet.transaction_record import TransactionRecord
-from chia.wallet.util.wallet_types import WalletType
-from chia.wallet.wallet_action import WalletAction
-from chia.util.profiler import profile_task
+from silicoin.wallet.wallet_coin_record import WalletCoinRecord
+from silicoin.wallet.wallet_state_manager import WalletStateManager
+from silicoin.wallet.transaction_record import TransactionRecord
+from silicoin.wallet.util.wallet_types import WalletType
+from silicoin.wallet.wallet_action import WalletAction
+from silicoin.util.profiler import profile_task
 
 
 class PeerRequestCache:
@@ -90,7 +90,7 @@ class WalletNode:
     key_config: Dict
     config: Dict
     constants: ConsensusConstants
-    server: Optional[ChiaServer]
+    server: Optional[SilicoinServer]
     log: logging.Logger
     # Maintains the state of the wallet (blockchain and transactions), handles DB connections
     wallet_state_manager: Optional[WalletStateManager]
@@ -156,7 +156,7 @@ class WalletNode:
             keychain_proxy = await self.ensure_keychain_proxy()
             key = await keychain_proxy.get_key_for_fingerprint(fingerprint)
         except KeyringIsEmpty:
-            self.log.warning("No keys present. Create keys with the UI, or with the 'chia keys' program.")
+            self.log.warning("No keys present. Create keys with the UI, or with the 'silicoin keys' program.")
             return None
         except KeyringIsLocked:
             self.log.warning("Keyring is locked")
@@ -233,7 +233,7 @@ class WalletNode:
         if len(puzzle_hashes) == 0:
             return
         assert self.server is not None
-        full_nodes: Dict[bytes32, WSChiaConnection] = self.server.connection_by_type.get(NodeType.FULL_NODE, {})
+        full_nodes: Dict[bytes32, WSSilicoinConnection] = self.server.connection_by_type.get(NodeType.FULL_NODE, {})
         for node_id, node in full_nodes.copy().items():
             await self.subscribe_to_phs(puzzle_hashes, node)
 
@@ -325,7 +325,7 @@ class WalletNode:
 
         return messages
 
-    def set_server(self, server: ChiaServer):
+    def set_server(self, server: SilicoinServer):
         self.server = server
         self.initialize_wallet_peers()
 
@@ -350,11 +350,11 @@ class WalletNode:
             )
             asyncio.create_task(self.wallet_peers.start())
 
-    def on_disconnect(self, peer: WSChiaConnection):
+    def on_disconnect(self, peer: WSSilicoinConnection):
         if peer.peer_node_id in self.untrusted_caches:
             self.untrusted_caches.pop(peer.peer_node_id)
 
-    async def on_connect(self, peer: WSChiaConnection):
+    async def on_connect(self, peer: WSSilicoinConnection):
         if self.wallet_state_manager is None:
             return None
 
@@ -374,7 +374,7 @@ class WalletNode:
         if not self.has_full_node() and self.wallet_peers is not None:
             asyncio.create_task(self.wallet_peers.on_connect(peer))
 
-    async def trusted_sync(self, full_node: WSChiaConnection):
+    async def trusted_sync(self, full_node: WSSilicoinConnection):
         """
         Performs a one-time sync with each trusted peer, subscribing to interested puzzle hashes and coin ids.
         """
@@ -443,7 +443,7 @@ class WalletNode:
             self.wallet_state_manager.state_changed("coin_added", wallet_id)
         self.synced_peers.add(full_node.peer_node_id)
 
-    async def subscribe_to_phs(self, puzzle_hashes: List[bytes32], peer: WSChiaConnection, height=uint32(0)):
+    async def subscribe_to_phs(self, puzzle_hashes: List[bytes32], peer: WSSilicoinConnection, height=uint32(0)):
         """
         Tell full nodes that we are interested in puzzle hashes, and for trusted connections, add the new coin state
         for the puzzle hashes.
@@ -495,7 +495,7 @@ class WalletNode:
     def is_trusted(self, peer):
         return self.server.is_trusted_peer(peer, self.config["trusted_peers"])
 
-    async def state_update_received(self, request: wallet_protocol.CoinStateUpdate, peer: WSChiaConnection):
+    async def state_update_received(self, request: wallet_protocol.CoinStateUpdate, peer: WSSilicoinConnection):
         assert self.wallet_state_manager is not None
         assert self.server is not None
         async with self.new_peak_lock:
@@ -580,7 +580,7 @@ class WalletNode:
                 return True
         return False
 
-    async def fetch_last_tx_from_peer(self, height: uint32, peer: WSChiaConnection) -> Optional[HeaderBlock]:
+    async def fetch_last_tx_from_peer(self, height: uint32, peer: WSSilicoinConnection) -> Optional[HeaderBlock]:
         request_height = height
         while True:
             if request_height == 0:
@@ -616,7 +616,7 @@ class WalletNode:
                 return response.header_block.foliage_transaction_block.timestamp
             curr_height = uint32(curr_height - 1)
 
-    async def new_peak_wallet(self, peak: wallet_protocol.NewPeakWallet, peer: WSChiaConnection):
+    async def new_peak_wallet(self, peak: wallet_protocol.NewPeakWallet, peer: WSSilicoinConnection):
         assert self.wallet_state_manager is not None
         assert self.server is not None
         async with self.new_peak_lock:
@@ -798,7 +798,7 @@ class WalletNode:
         await self.complete_blocks(blocks, peer)
         await self.wallet_state_manager.create_more_puzzle_hashes()
 
-    async def complete_blocks(self, header_blocks: List[HeaderBlock], peer: WSChiaConnection):
+    async def complete_blocks(self, header_blocks: List[HeaderBlock], peer: WSSilicoinConnection):
         if self.wallet_state_manager is None:
             return None
         header_block_records: List[HeaderBlockRecord] = []
@@ -868,7 +868,7 @@ class WalletNode:
             self.wallet_state_manager.state_changed("coin_added", wallet_id)
 
     async def get_additions(
-        self, peer: WSChiaConnection, block_i, additions: Optional[List[bytes32]], get_all_additions: bool = False
+        self, peer: WSSilicoinConnection, block_i, additions: Optional[List[bytes32]], get_all_additions: bool = False
     ) -> Optional[List[Coin]]:
         if (additions is not None and len(additions) > 0) or get_all_additions:
             if get_all_additions:
@@ -902,7 +902,7 @@ class WalletNode:
             return []  # No added coins
 
     async def get_removals(
-        self, peer: WSChiaConnection, block_i, additions, removals, request_all_removals=False
+        self, peer: WSSilicoinConnection, block_i, additions, removals, request_all_removals=False
     ) -> Optional[List[Coin]]:
         assert self.wallet_state_manager is not None
         # Check if we need all removals
@@ -951,7 +951,7 @@ class WalletNode:
             return []
 
     async def fetch_and_validate_the_weight_proof(
-        self, peer: WSChiaConnection, peak: HeaderBlock
+        self, peer: WSSilicoinConnection, peak: HeaderBlock
     ) -> Tuple[bool, Optional[WeightProof], List[SubEpochSummary], List[BlockRecord]]:
         assert self.wallet_state_manager is not None
         assert self.wallet_state_manager.weight_proof_handler is not None
@@ -989,7 +989,7 @@ class WalletNode:
 
     async def untrusted_subscribe_to_puzzle_hashes(
         self,
-        peer: WSChiaConnection,
+        peer: WSSilicoinConnection,
         save_state: bool,
         peer_request_cache: Optional[PeerRequestCache],
         weight_proof: Optional[WeightProof],
@@ -1032,7 +1032,7 @@ class WalletNode:
                     break
 
     async def untrusted_sync_to_peer(
-        self, peer: WSChiaConnection, weight_proof: WeightProof, syncing: bool, fork_height: int
+        self, peer: WSSilicoinConnection, weight_proof: WeightProof, syncing: bool, fork_height: int
     ):
         assert self.wallet_state_manager is not None
         # If new weight proof is higher than the old one, rollback to the fork point and than apply new coin_states

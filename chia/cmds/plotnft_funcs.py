@@ -9,21 +9,21 @@ import time
 from pprint import pprint
 from typing import List, Dict, Optional, Callable
 
-from chia.cmds.wallet_funcs import print_balance, wallet_coin_unit
-from chia.pools.pool_wallet_info import PoolWalletInfo, PoolSingletonState
-from chia.protocols.pool_protocol import POOL_PROTOCOL_VERSION
-from chia.rpc.farmer_rpc_client import FarmerRpcClient
-from chia.rpc.wallet_rpc_client import WalletRpcClient
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.server.server import ssl_context_for_root
-from chia.ssl.create_ssl import get_mozilla_ca_crt
-from chia.util.bech32m import encode_puzzle_hash
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.config import load_config
-from chia.util.default_root import DEFAULT_ROOT_PATH
-from chia.util.ints import uint16, uint32
-from chia.wallet.transaction_record import TransactionRecord
-from chia.wallet.util.wallet_types import WalletType
+from silicoin.cmds.wallet_funcs import print_balance, wallet_coin_unit
+from silicoin.pools.pool_wallet_info import PoolWalletInfo, PoolSingletonState
+from silicoin.protocols.pool_protocol import POOL_PROTOCOL_VERSION
+from silicoin.rpc.farmer_rpc_client import FarmerRpcClient
+from silicoin.rpc.wallet_rpc_client import WalletRpcClient
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.server.server import ssl_context_for_root
+from silicoin.ssl.create_ssl import get_mozilla_ca_crt
+from silicoin.util.bech32m import encode_puzzle_hash
+from silicoin.util.byte_types import hexstr_to_bytes
+from silicoin.util.config import load_config
+from silicoin.util.default_root import DEFAULT_ROOT_PATH
+from silicoin.util.ints import uint16, uint32
+from silicoin.wallet.transaction_record import TransactionRecord
+from silicoin.wallet.util.wallet_types import WalletType
 
 
 async def create_pool_args(pool_url: str) -> Dict:
@@ -94,7 +94,7 @@ async def create(args: dict, wallet_client: WalletRpcClient, fingerprint: int) -
                 tx = await wallet_client.get_transaction(str(1), tx_record.name)
                 if len(tx.sent_to) > 0:
                     print(f"Transaction submitted to nodes: {tx.sent_to}")
-                    print(f"Do chia wallet get_transaction -f {fingerprint} -tx 0x{tx_record.name} to get status")
+                    print(f"Do silicoin wallet get_transaction -f {fingerprint} -tx 0x{tx_record.name} to get status")
                     return None
         except Exception as e:
             print(f"Error creating plot NFT: {e}")
@@ -188,7 +188,7 @@ async def show(args: dict, wallet_client: WalletRpcClient, fingerprint: int) -> 
         if isinstance(e, aiohttp.ClientConnectorError):
             print(
                 f"Connection error. Check if farmer is running at {farmer_rpc_port}."
-                f" You can run the farmer by:\n    chia start farmer-only"
+                f" You can run the farmer by:\n    silicoin start farmer-only"
             )
         else:
             print(f"Exception from 'wallet' {e}")
@@ -252,7 +252,7 @@ async def get_login_link(launcher_id_str: str) -> None:
         if isinstance(e, aiohttp.ClientConnectorError):
             print(
                 f"Connection error. Check if farmer is running at {farmer_rpc_port}."
-                f" You can run the farmer by:\n    chia start farmer-only"
+                f" You can run the farmer by:\n    silicoin start farmer-only"
             )
         else:
             print(f"Exception from 'farmer' {e}")
@@ -279,7 +279,7 @@ async def submit_tx_with_confirmation(
                 tx = await wallet_client.get_transaction(str(1), tx_record.name)
                 if len(tx.sent_to) > 0:
                     print(f"Transaction submitted to nodes: {tx.sent_to}")
-                    print(f"Do chia wallet get_transaction -f {fingerprint} -tx 0x{tx_record.name} to get status")
+                    print(f"Do silicoin wallet get_transaction -f {fingerprint} -tx 0x{tx_record.name} to get status")
                     return None
         except Exception as e:
             print(f"Error performing operation on Plot NFT -f {fingerprint} wallet id: {wallet_id}: {e}")

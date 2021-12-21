@@ -1,15 +1,15 @@
 import logging
 from typing import List, Union
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.consensus.constants import ConsensusConstants
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.full_block import FullBlock
-from chia.types.header_block import HeaderBlock
-from chia.types.unfinished_block import UnfinishedBlock
-from chia.types.unfinished_header_block import UnfinishedHeaderBlock
-from chia.util.ints import uint64
+from silicoin.consensus.block_record import BlockRecord
+from silicoin.consensus.blockchain_interface import BlockchainInterface
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.full_block import FullBlock
+from silicoin.types.header_block import HeaderBlock
+from silicoin.types.unfinished_block import UnfinishedBlock
+from silicoin.types.unfinished_header_block import UnfinishedHeaderBlock
+from silicoin.util.ints import uint64
 
 log = logging.getLogger(__name__)
 

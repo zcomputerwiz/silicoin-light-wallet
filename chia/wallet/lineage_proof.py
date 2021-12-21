@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.program import Program
-from chia.util.ints import uint64
-from chia.util.streamable import Streamable, streamable
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.program import Program
+from silicoin.util.ints import uint64
+from silicoin.util.streamable import Streamable, streamable
 
 
 @dataclass(frozen=True)

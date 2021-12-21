@@ -3,17 +3,17 @@ import asyncio
 from blspy import G2Element
 from clvm_tools import binutils
 
-from chia.consensus.block_rewards import calculate_base_farmer_reward, calculate_pool_reward
-from chia.rpc.full_node_rpc_client import FullNodeRpcClient
-from chia.types.blockchain_format.program import Program
-from chia.types.coin_spend import CoinSpend
-from chia.types.condition_opcodes import ConditionOpcode
-from chia.types.spend_bundle import SpendBundle
-from chia.util.bech32m import decode_puzzle_hash
-from chia.util.condition_tools import parse_sexp_to_conditions
-from chia.util.config import load_config
-from chia.util.default_root import DEFAULT_ROOT_PATH
-from chia.util.ints import uint32, uint16
+from silicoin.consensus.block_rewards import calculate_base_farmer_reward, calculate_pool_reward
+from silicoin.rpc.full_node_rpc_client import FullNodeRpcClient
+from silicoin.types.blockchain_format.program import Program
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.types.condition_opcodes import ConditionOpcode
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.util.bech32m import decode_puzzle_hash
+from silicoin.util.condition_tools import parse_sexp_to_conditions
+from silicoin.util.config import load_config
+from silicoin.util.default_root import DEFAULT_ROOT_PATH
+from silicoin.util.ints import uint32, uint16
 
 
 def print_conditions(spend_bundle: SpendBundle):

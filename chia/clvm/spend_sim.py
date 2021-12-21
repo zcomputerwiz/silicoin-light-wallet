@@ -2,27 +2,27 @@ import aiosqlite
 
 from typing import Optional, List, Dict, Tuple, Any
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program, SerializedProgram
-from chia.util.ints import uint64, uint32
-from chia.util.hash import std_hash
-from chia.util.errors import Err
-from chia.util.db_wrapper import DBWrapper
-from chia.types.coin_record import CoinRecord
-from chia.types.spend_bundle import SpendBundle
-from chia.types.generator_types import BlockGenerator
-from chia.types.mempool_inclusion_status import MempoolInclusionStatus
-from chia.types.coin_spend import CoinSpend
-from chia.full_node.bundle_tools import simple_solution_generator
-from chia.full_node.mempool_manager import MempoolManager
-from chia.full_node.coin_store import CoinStore
-from chia.full_node.mempool_check_conditions import get_puzzle_and_solution_for_coin
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.default_constants import DEFAULT_CONSTANTS
-from chia.consensus.coinbase import create_pool_coin, create_farmer_coin
-from chia.consensus.block_rewards import calculate_pool_reward, calculate_base_farmer_reward
-from chia.consensus.cost_calculator import NPCResult
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import Program, SerializedProgram
+from silicoin.util.ints import uint64, uint32
+from silicoin.util.hash import std_hash
+from silicoin.util.errors import Err
+from silicoin.util.db_wrapper import DBWrapper
+from silicoin.types.coin_record import CoinRecord
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.types.generator_types import BlockGenerator
+from silicoin.types.mempool_inclusion_status import MempoolInclusionStatus
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.full_node.bundle_tools import simple_solution_generator
+from silicoin.full_node.mempool_manager import MempoolManager
+from silicoin.full_node.coin_store import CoinStore
+from silicoin.full_node.mempool_check_conditions import get_puzzle_and_solution_for_coin
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.consensus.default_constants import DEFAULT_CONSTANTS
+from silicoin.consensus.coinbase import create_pool_coin, create_farmer_coin
+from silicoin.consensus.block_rewards import calculate_pool_reward, calculate_base_farmer_reward
+from silicoin.consensus.cost_calculator import NPCResult
 
 """
 The purpose of this file is to provide a lightweight simulator for the testing of Chialisp smart contracts.
@@ -30,7 +30,7 @@ The purpose of this file is to provide a lightweight simulator for the testing o
 The Node object uses actual MempoolManager, Mempool and CoinStore objects, while substituting FullBlock and
 BlockRecord objects for trimmed down versions.
 
-There is also a provided NodeClient object which implements many of the methods from chia.rpc.full_node_rpc_client
+There is also a provided NodeClient object which implements many of the methods from silicoin.rpc.full_node_rpc_client
 and is designed so that you could test with it and then swap in a real rpc client that uses the same code you tested.
 """
 

@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.spend_bundle import SpendBundle
-from chia.util.ints import uint8, uint32, uint64
-from chia.util.streamable import Streamable, streamable
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.util.ints import uint8, uint32, uint64
+from silicoin.util.streamable import Streamable, streamable
 
 
 @dataclass(frozen=True)

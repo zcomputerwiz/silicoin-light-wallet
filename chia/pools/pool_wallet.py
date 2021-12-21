@@ -4,8 +4,8 @@ from typing import Any, Optional, Set, Tuple, List, Dict
 
 from blspy import PrivateKey, G2Element, G1Element
 
-from chia.pools.pool_config import PoolWalletConfig, load_pool_config, update_pool_config
-from chia.pools.pool_wallet_info import (
+from silicoin.pools.pool_config import PoolWalletConfig, load_pool_config, update_pool_config
+from silicoin.pools.pool_wallet_info import (
     PoolWalletInfo,
     PoolSingletonState,
     PoolState,
@@ -14,18 +14,18 @@ from chia.pools.pool_wallet_info import (
     LEAVING_POOL,
     create_pool_state,
 )
-from chia.protocols import wallet_protocol
-from chia.protocols.pool_protocol import POOL_PROTOCOL_VERSION
+from silicoin.protocols import wallet_protocol
+from silicoin.protocols.pool_protocol import POOL_PROTOCOL_VERSION
 
-from chia.types.announcement import Announcement
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.program import Program, SerializedProgram
-from chia.types.coin_record import CoinRecord
-from chia.types.coin_spend import CoinSpend
-from chia.types.spend_bundle import SpendBundle
+from silicoin.types.announcement import Announcement
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.program import Program, SerializedProgram
+from silicoin.types.coin_record import CoinRecord
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.types.spend_bundle import SpendBundle
 
-from chia.pools.pool_puzzles import (
+from silicoin.pools.pool_puzzles import (
     create_waiting_room_inner_puzzle,
     create_full_puzzle,
     SINGLETON_LAUNCHER,
@@ -43,19 +43,19 @@ from chia.pools.pool_puzzles import (
     get_delayed_puz_info_from_launcher_spend,
 )
 
-from chia.util.ints import uint8, uint32, uint64
-from chia.wallet.derive_keys import (
+from silicoin.util.ints import uint8, uint32, uint64
+from silicoin.wallet.derive_keys import (
     master_sk_to_pooling_authentication_sk,
     find_owner_sk,
 )
-from chia.wallet.sign_coin_spends import sign_coin_spends
-from chia.wallet.transaction_record import TransactionRecord
-from chia.wallet.util.wallet_types import WalletType
-from chia.wallet.wallet import Wallet
-from chia.wallet.wallet_coin_record import WalletCoinRecord
+from silicoin.wallet.sign_coin_spends import sign_coin_spends
+from silicoin.wallet.transaction_record import TransactionRecord
+from silicoin.wallet.util.wallet_types import WalletType
+from silicoin.wallet.wallet import Wallet
+from silicoin.wallet.wallet_coin_record import WalletCoinRecord
 
-from chia.wallet.wallet_info import WalletInfo
-from chia.wallet.util.transaction_type import TransactionType
+from silicoin.wallet.wallet_info import WalletInfo
+from silicoin.wallet.util.transaction_type import TransactionType
 
 
 class PoolWallet:
@@ -402,7 +402,7 @@ class PoolWallet:
     ) -> Tuple[TransactionRecord, bytes32, bytes32]:
         """
         A "plot NFT", or pool wallet, represents the idea of a set of plots that all pay to
-        the same pooling puzzle. This puzzle is a `chia singleton` that is
+        the same pooling puzzle. This puzzle is a `silicoin singleton` that is
         parameterized with a public key controlled by the user's wallet
         (a `smart coin`). It contains an inner puzzle that can switch between
         paying block rewards to a pool, or to a user's own wallet.

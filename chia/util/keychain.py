@@ -6,8 +6,8 @@ import unicodedata
 
 from bitstring import BitArray  # pyright: reportMissingImports=false
 from blspy import AugSchemeMPL, G1Element, PrivateKey  # pyright: reportMissingImports=false
-from chia.util.hash import std_hash
-from chia.util.keyring_wrapper import KeyringWrapper
+from silicoin.util.hash import std_hash
+from silicoin.util.keyring_wrapper import KeyringWrapper
 from hashlib import pbkdf2_hmac
 from pathlib import Path
 from secrets import token_bytes
@@ -16,8 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 CURRENT_KEY_VERSION = "1.8"
-DEFAULT_USER = f"user-chia-{CURRENT_KEY_VERSION}"  # e.g. user-chia-1.8
-DEFAULT_SERVICE = f"chia-{DEFAULT_USER}"  # e.g. chia-user-chia-1.8
+DEFAULT_USER = f"user-silicoin-{CURRENT_KEY_VERSION}"  # e.g. user-silicoin-1.8
+DEFAULT_SERVICE = f"silicoin-{DEFAULT_USER}"  # e.g. silicoin-user-silicoin-1.8
 DEFAULT_PASSPHRASE_PROMPT = (
     colorama.Fore.YELLOW + colorama.Style.BRIGHT + "(Unlock Keyring)" + colorama.Style.RESET_ALL + " Passphrase: "
 )  # noqa: E501
@@ -44,7 +44,7 @@ class KeyringMaxUnlockAttempts(Exception):
 
 
 def supports_keyring_passphrase() -> bool:
-    return False or os.environ.get("CHIA_PASSPHRASE_SUPPORT", "").lower() in ["1", "true"]
+    return False or os.environ.get("SILICOIN_PASSPHRASE_SUPPORT", "").lower() in ["1", "true"]
 
 
 def supports_os_passphrase_storage() -> bool:
@@ -75,7 +75,7 @@ def obtain_current_passphrase(prompt: str = DEFAULT_PASSPHRASE_PROMPT, use_passp
     prompted interactively to enter their passphrase a max of MAX_RETRIES times
     before failing.
     """
-    from chia.cmds.passphrase_funcs import prompt_for_passphrase
+    from silicoin.cmds.passphrase_funcs import prompt_for_passphrase
 
     if use_passphrase_cache:
         passphrase, validated = KeyringWrapper.get_shared_instance().get_cached_master_passphrase()

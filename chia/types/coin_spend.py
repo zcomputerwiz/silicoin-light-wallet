@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from typing import List
 
 from blspy import G2Element
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import SerializedProgram, INFINITE_COST
-from chia.types.condition_opcodes import ConditionOpcode
-from chia.util.chain_utils import additions_for_solution, fee_for_solution
-from chia.util.streamable import Streamable, streamable
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import SerializedProgram, INFINITE_COST
+from silicoin.types.condition_opcodes import ConditionOpcode
+from silicoin.util.chain_utils import additions_for_solution, fee_for_solution
+from silicoin.util.streamable import Streamable, streamable
 
 
 @dataclass(frozen=True)
@@ -30,10 +30,10 @@ class CoinSpend(Streamable):
 
     def hints(self) -> List[bytes]:
         # import above was causing circular import issue
-        from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions
-        from chia.consensus.default_constants import DEFAULT_CONSTANTS
-        from chia.types.spend_bundle import SpendBundle
-        from chia.full_node.bundle_tools import simple_solution_generator
+        from silicoin.full_node.mempool_check_conditions import get_name_puzzle_conditions
+        from silicoin.consensus.default_constants import DEFAULT_CONSTANTS
+        from silicoin.types.spend_bundle import SpendBundle
+        from silicoin.full_node.bundle_tools import simple_solution_generator
 
         bundle = SpendBundle([self], G2Element())
         generator = simple_solution_generator(bundle)

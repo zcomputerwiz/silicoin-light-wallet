@@ -1,13 +1,13 @@
 from clvm_tools import binutils
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.program import Program
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.blockchain_format.program import Program
 from typing import List, Optional, Tuple
 from blspy import G1Element
-from chia.types.blockchain_format.coin import Coin
-from chia.types.coin_spend import CoinSpend
-from chia.util.ints import uint64
-from chia.wallet.puzzles.load_clvm import load_clvm
-from chia.types.condition_opcodes import ConditionOpcode
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.util.ints import uint64
+from silicoin.wallet.puzzles.load_clvm import load_clvm
+from silicoin.types.condition_opcodes import ConditionOpcode
 
 
 SINGLETON_TOP_LAYER_MOD = load_clvm("singleton_top_layer.clvm")

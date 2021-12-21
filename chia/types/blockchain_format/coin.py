@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Any, List
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.clvm import int_to_bytes
-from chia.util.hash import std_hash
-from chia.util.ints import uint64
-from chia.util.streamable import Streamable, streamable
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.util.clvm import int_to_bytes
+from silicoin.util.hash import std_hash
+from silicoin.util.ints import uint64
+from silicoin.util.streamable import Streamable, streamable
 
 
 @dataclass(frozen=True)

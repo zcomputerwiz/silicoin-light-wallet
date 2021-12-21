@@ -4,26 +4,26 @@ from typing import Any, Dict, List, Optional, Set
 
 from blspy import G1Element
 
-from chia.consensus.cost_calculator import calculate_cost_of_program, NPCResult
-from chia.full_node.bundle_tools import simple_solution_generator
-from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program, SerializedProgram
-from chia.types.announcement import Announcement
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.coin_spend import CoinSpend
-from chia.types.generator_types import BlockGenerator
-from chia.types.spend_bundle import SpendBundle
-from chia.util.ints import uint8, uint32, uint64, uint128
-from chia.util.hash import std_hash
-from chia.wallet.derivation_record import DerivationRecord
-from chia.wallet.puzzles.p2_delegated_puzzle_or_hidden_puzzle import (
+from silicoin.consensus.cost_calculator import calculate_cost_of_program, NPCResult
+from silicoin.full_node.bundle_tools import simple_solution_generator
+from silicoin.full_node.mempool_check_conditions import get_name_puzzle_conditions
+from silicoin.types.blockchain_format.coin import Coin
+from silicoin.types.blockchain_format.program import Program, SerializedProgram
+from silicoin.types.announcement import Announcement
+from silicoin.types.blockchain_format.sized_bytes import bytes32
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.types.generator_types import BlockGenerator
+from silicoin.types.spend_bundle import SpendBundle
+from silicoin.util.ints import uint8, uint32, uint64, uint128
+from silicoin.util.hash import std_hash
+from silicoin.wallet.derivation_record import DerivationRecord
+from silicoin.wallet.puzzles.p2_delegated_puzzle_or_hidden_puzzle import (
     DEFAULT_HIDDEN_PUZZLE_HASH,
     calculate_synthetic_secret_key,
     puzzle_for_pk,
     solution_for_conditions,
 )
-from chia.wallet.puzzles.puzzle_utils import (
+from silicoin.wallet.puzzles.puzzle_utils import (
     make_assert_coin_announcement,
     make_assert_puzzle_announcement,
     make_assert_my_coin_id_condition,
@@ -33,13 +33,13 @@ from chia.wallet.puzzles.puzzle_utils import (
     make_create_coin_condition,
     make_reserve_fee_condition,
 )
-from chia.wallet.secret_key_store import SecretKeyStore
-from chia.wallet.sign_coin_spends import sign_coin_spends
-from chia.wallet.transaction_record import TransactionRecord
-from chia.wallet.util.transaction_type import TransactionType
-from chia.wallet.util.wallet_types import WalletType
-from chia.wallet.wallet_coin_record import WalletCoinRecord
-from chia.wallet.wallet_info import WalletInfo
+from silicoin.wallet.secret_key_store import SecretKeyStore
+from silicoin.wallet.sign_coin_spends import sign_coin_spends
+from silicoin.wallet.transaction_record import TransactionRecord
+from silicoin.wallet.util.transaction_type import TransactionType
+from silicoin.wallet.util.wallet_types import WalletType
+from silicoin.wallet.wallet_coin_record import WalletCoinRecord
+from silicoin.wallet.wallet_info import WalletInfo
 
 
 class Wallet:
@@ -476,14 +476,14 @@ class Wallet:
         await self.wallet_state_manager.wallet_node.update_ui()
 
     # This is to be aggregated together with a coloured coin offer to ensure that the trade happens
-    async def create_spend_bundle_relative_chia(self, chia_amount: int, exclude: List[Coin]) -> SpendBundle:
+    async def create_spend_bundle_relative_silicoin(self, silicoin_amount: int, exclude: List[Coin]) -> SpendBundle:
         list_of_solutions = []
         utxos = None
 
         # If we're losing value then get coins with at least that much value
         # If we're gaining value then our amount doesn't matter
-        if chia_amount < 0:
-            utxos = await self.select_coins(abs(chia_amount), exclude)
+        if silicoin_amount < 0:
+            utxos = await self.select_coins(abs(silicoin_amount), exclude)
         else:
             utxos = await self.select_coins(0, exclude)
 
@@ -491,7 +491,7 @@ class Wallet:
 
         # Calculate output amount given sum of utxos
         spend_value = sum([coin.amount for coin in utxos])
-        chia_amount = spend_value + chia_amount
+        silicoin_amount = spend_value + silicoin_amount
 
         # Create coin solutions for each utxo
         output_created = None
@@ -499,7 +499,7 @@ class Wallet:
             puzzle = await self.puzzle_for_puzzle_hash(coin.puzzle_hash)
             if output_created is None:
                 newpuzhash = await self.get_new_puzzlehash()
-                primaries = [{"puzzlehash": newpuzhash, "amount": chia_amount}]
+                primaries = [{"puzzlehash": newpuzhash, "amount": silicoin_amount}]
                 solution = self.make_solution(primaries=primaries)
                 output_created = coin
             list_of_solutions.append(CoinSpend(coin, puzzle, solution))

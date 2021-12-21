@@ -28,7 +28,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-      - uses: Chia-Network/actions/clean-workspace@main
+      - uses: Silicoin-Network/actions/clean-workspace@main
 
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - uses: Chia-Network/actions/git-ssh-to-https@main
+      - uses: Silicoin-Network/actions/git-ssh-to-https@main
 
       - name: Cleanup any leftovers that exist from previous runs
         run: bash build_scripts/clean-runner.sh || true
@@ -63,7 +63,7 @@ jobs:
           arch -arm64 python3 -m venv ../venv
           . ../venv/bin/activate
           arch -arm64 pip install setuptools_scm
-          echo "::set-output name=CHIA_INSTALLER_VERSION::$(arch -arm64 python3 ./build_scripts/installer-version.py)"
+          echo "::set-output name=SILICOIN_INSTALLER_VERSION::$(arch -arm64 python3 ./build_scripts/installer-version.py)"
           deactivate
 
       # This will be recreated in the next step
@@ -106,7 +106,7 @@ jobs:
       - name: Upload MacOS artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: Chia-Installer-MacOS-arm64-dmg
+          name: Silicoin-Installer-MacOS-arm64-dmg
           path: ${{ github.workspace }}/build_scripts/final_installer/
 
       - name: Install AWS CLI
@@ -117,7 +117,7 @@ jobs:
       - name: Create Checksums
         run: |
           ls
-          arch -arm64 shasum -a 256 ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg > ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg.sha256
+          arch -arm64 shasum -a 256 ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg > ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg.sha256
 
       - name: Upload to s3
         if: steps.check_secrets.outputs.HAS_AWS_SECRET
@@ -126,8 +126,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.INSTALLER_UPLOAD_SECRET }}
           AWS_REGION: us-west-2
         run: |
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg s3://download-chia-net/builds/
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg s3://download-chia-net/protocol_and_cats_rebased/
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg s3://download-silicoin-net/builds/
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg s3://download-silicoin-net/protocol_and_cats_rebased/
 
       - name: Install py3createtorrent
         if: startsWith(github.ref, 'refs/tags/')
@@ -137,30 +137,30 @@ jobs:
       - name: Create torrent
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          arch -arm64 py3createtorrent -f -t udp://tracker.opentrackr.org:1337/announce ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg -o ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg.torrent --webseed https://download-chia-net.s3.us-west-2.amazonaws.com/install/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg
+          arch -arm64 py3createtorrent -f -t udp://tracker.opentrackr.org:1337/announce ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg -o ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg.torrent --webseed https://download-silicoin-net.s3.us-west-2.amazonaws.com/install/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg
           ls ${{ github.workspace }}/build_scripts/final_installer/
 
       - name: Upload Beta Installer
         if: steps.check_secrets.outputs.HAS_AWS_SECRET && github.ref == 'refs/heads/main'
         env:
-          CHIA_INSTALLER_VERSION: ${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}
+          SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.INSTALLER_UPLOAD_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.INSTALLER_UPLOAD_SECRET }}
           AWS_REGION: us-west-2
         run: |
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg s3://download-chia-net/beta/Chia-arm64_latest_beta.dmg
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg.sha256 s3://download-chia-net/beta/Chia-arm64_latest_beta.dmg.sha256
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg s3://download-silicoin-net/beta/Silicoin-arm64_latest_beta.dmg
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg.sha256 s3://download-silicoin-net/beta/Silicoin-arm64_latest_beta.dmg.sha256
 
       - name: Upload CATs Beta Installer
         if: steps.check_secrets.outputs.HAS_AWS_SECRET && github.ref == 'refs/heads/protocol_and_cats_rebased'
         env:
-          CHIA_INSTALLER_VERSION: ${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}
+          SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.INSTALLER_UPLOAD_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.INSTALLER_UPLOAD_SECRET }}
           AWS_REGION: us-west-2
         run: |
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg s3://download-chia-net/cats-beta-installers/Chia-arm64_latest_cats_beta.dmg
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg.sha256 s3://download-chia-net/cats-beta-installers/Chia-arm64_latest_cats_beta.dmg.sha256
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg s3://download-silicoin-net/cats-beta-installers/Silicoin-arm64_latest_cats_beta.dmg
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg.sha256 s3://download-silicoin-net/cats-beta-installers/Silicoin-arm64_latest_cats_beta.dmg.sha256
 
       - name: Upload Release Files
         if: steps.check_secrets.outputs.HAS_AWS_SECRET && startsWith(github.ref, 'refs/tags/')
@@ -169,9 +169,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.INSTALLER_UPLOAD_SECRET }}
           AWS_REGION: us-west-2
         run: |
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg s3://download-chia-net/install/
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg.sha256 s3://download-chia-net/install/
-          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Chia-${{ steps.version_number.outputs.CHIA_INSTALLER_VERSION }}-arm64.dmg.torrent s3://download-chia-net/torrents/
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg s3://download-silicoin-net/install/
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg.sha256 s3://download-silicoin-net/install/
+          arch -arm64 aws s3 cp ${{ github.workspace }}/build_scripts/final_installer/Silicoin-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}-arm64.dmg.torrent s3://download-silicoin-net/torrents/
 
       - name: Get tag name
         if: startsWith(github.ref, 'refs/tags/')
@@ -183,7 +183,7 @@ jobs:
       - name: Mark installer complete
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          curl -s -XPOST -H "Authorization: Bearer ${{ secrets.GLUE_ACCESS_TOKEN }}" --data '{"chia_ref": "${{ steps.tag-name.outputs.TAG_NAME }}"}' ${{ secrets.GLUE_API_URL }}/api/v1/${{ steps.tag-name.outputs.REPO_NAME }}/${{ steps.tag-name.outputs.TAG_NAME }}/success/build-mac-m1
+          curl -s -XPOST -H "Authorization: Bearer ${{ secrets.GLUE_ACCESS_TOKEN }}" --data '{"silicoin_ref": "${{ steps.tag-name.outputs.TAG_NAME }}"}' ${{ secrets.GLUE_API_URL }}/api/v1/${{ steps.tag-name.outputs.REPO_NAME }}/${{ steps.tag-name.outputs.TAG_NAME }}/success/build-mac-m1
 
       # We want to delete this no matter what happened in the previous steps (failures, success, etc)
       - name: Delete signing keychain

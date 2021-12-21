@@ -2,14 +2,14 @@ import asyncio
 import logging
 import pytest
 from blspy import PrivateKey
-from chia.pools.pool_wallet import PoolWallet
-from chia.pools.pool_wallet_info import PoolState, FARMING_TO_POOL
-from chia.simulator.simulator_protocol import FarmNewBlockProtocol
-from chia.types.coin_spend import CoinSpend
-from chia.types.peer_info import PeerInfo
-from chia.util.ints import uint16, uint32
-from chia.wallet.derive_keys import master_sk_to_singleton_owner_sk
-from chia.wallet.wallet_state_manager import WalletStateManager
+from silicoin.pools.pool_wallet import PoolWallet
+from silicoin.pools.pool_wallet_info import PoolState, FARMING_TO_POOL
+from silicoin.simulator.simulator_protocol import FarmNewBlockProtocol
+from silicoin.types.coin_spend import CoinSpend
+from silicoin.types.peer_info import PeerInfo
+from silicoin.util.ints import uint16, uint32
+from silicoin.wallet.derive_keys import master_sk_to_singleton_owner_sk
+from silicoin.wallet.wallet_state_manager import WalletStateManager
 from tests.setup_nodes import self_hostname, setup_simulators_and_wallets
 
 

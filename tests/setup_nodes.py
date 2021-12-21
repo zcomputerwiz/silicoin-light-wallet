@@ -5,25 +5,25 @@ import signal
 from secrets import token_bytes
 from typing import Dict, List, Optional
 
-from chia.consensus.constants import ConsensusConstants
-from chia.daemon.server import WebSocketServer, create_server_for_daemon, daemon_launch_lock_path, singleton
-from chia.full_node.full_node_api import FullNodeAPI
-from chia.server.start_farmer import service_kwargs_for_farmer
-from chia.server.start_full_node import service_kwargs_for_full_node
-from chia.server.start_harvester import service_kwargs_for_harvester
-from chia.server.start_introducer import service_kwargs_for_introducer
-from chia.server.start_service import Service
-from chia.server.start_timelord import service_kwargs_for_timelord
-from chia.server.start_wallet import service_kwargs_for_wallet
-from chia.simulator.start_simulator import service_kwargs_for_full_node_simulator
-from chia.timelord.timelord_launcher import kill_processes, spawn_process
-from chia.types.peer_info import PeerInfo
-from chia.util.bech32m import encode_puzzle_hash
+from silicoin.consensus.constants import ConsensusConstants
+from silicoin.daemon.server import WebSocketServer, create_server_for_daemon, daemon_launch_lock_path, singleton
+from silicoin.full_node.full_node_api import FullNodeAPI
+from silicoin.server.start_farmer import service_kwargs_for_farmer
+from silicoin.server.start_full_node import service_kwargs_for_full_node
+from silicoin.server.start_harvester import service_kwargs_for_harvester
+from silicoin.server.start_introducer import service_kwargs_for_introducer
+from silicoin.server.start_service import Service
+from silicoin.server.start_timelord import service_kwargs_for_timelord
+from silicoin.server.start_wallet import service_kwargs_for_wallet
+from silicoin.simulator.start_simulator import service_kwargs_for_full_node_simulator
+from silicoin.timelord.timelord_launcher import kill_processes, spawn_process
+from silicoin.types.peer_info import PeerInfo
+from silicoin.util.bech32m import encode_puzzle_hash
 from tests.block_tools import create_block_tools, create_block_tools_async, test_constants
 from tests.util.keyring import TempKeyring
-from chia.util.hash import std_hash
-from chia.util.ints import uint16, uint32
-from chia.util.keychain import bytes_to_mnemonic
+from silicoin.util.hash import std_hash
+from silicoin.util.ints import uint16, uint32
+from silicoin.util.keychain import bytes_to_mnemonic
 from tests.time_out_assert import time_out_assert_custom_interval
 
 
