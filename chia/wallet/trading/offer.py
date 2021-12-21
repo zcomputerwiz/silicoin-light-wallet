@@ -47,7 +47,7 @@ class Offer:
 
     @staticmethod
     def notarize_payments(
-        requested_payments: Dict[Optional[bytes32], List[Payment]],  # `None` means you are requesting XCH
+        requested_payments: Dict[Optional[bytes32], List[Payment]],  # `None` means you are requesting SIT
         coins: List[Coin],
     ) -> Dict[Optional[bytes32], List[NotarizedPayment]]:
         # This sort should be reproducible in CLVM with `>s`
@@ -157,7 +157,7 @@ class Offer:
             new_dic: Dict[str, int] = {}
             for key in dic:
                 if key is None:
-                    new_dic["xch"] = dic[key]
+                    new_dic["sit"] = dic[key]
                 else:
                     new_dic[key.hex()] = dic[key]
             return new_dic
@@ -174,7 +174,7 @@ class Offer:
         pending_dict: Dict[str, int] = {}
         # First we add up the amounts of all coins that share an ancestor with the offered coins (i.e. a primary coin)
         for asset_id, coins in self.get_offered_coins().items():
-            name = "xch" if asset_id is None else asset_id.hex()
+            name = "sit" if asset_id is None else asset_id.hex()
             pending_dict[name] = 0
             for coin in coins:
                 root_removal: Coin = self.get_root_removal(coin)
@@ -182,11 +182,11 @@ class Offer:
                 for addition in filter(lambda c: c.parent_coin_info == root_removal.name(), all_additions):
                     pending_dict[name] += addition.amount
 
-        # Then we add a potential fee as pending XCH
+        # Then we add a potential fee as pending SIT
         fee: int = sum(c.amount for c in all_removals) - sum(c.amount for c in all_additions)
         if fee > 0:
-            pending_dict.setdefault("xch", 0)
-            pending_dict["xch"] += fee
+            pending_dict.setdefault("sit", 0)
+            pending_dict["sit"] += fee
 
         # Then we gather anything else as unknown
         sum_of_additions_so_far: int = sum(pending_dict.values())

@@ -187,7 +187,7 @@ async def make_offer(args: dict, wallet_client: WalletRpcClient, fingerprint: in
         for item in [*offers, *requests]:
             wallet_id, amount = tuple(item.split(":")[0:2])
             if int(wallet_id) == 1:
-                name: str = "XCH"
+                name: str = "SIT"
                 unit: int = units["silicoin"]
             else:
                 name = await wallet_client.get_cat_name(wallet_id)
@@ -234,9 +234,9 @@ def timestamp_to_time(timestamp):
 
 async def print_offer_summary(wallet_client: WalletRpcClient, sum_dict: dict):
     for asset_id, amount in sum_dict.items():
-        if asset_id == "xch":
+        if asset_id == "sit":
             wid: str = "1"
-            name: str = "XCH"
+            name: str = "SIT"
             unit: int = units["silicoin"]
         else:
             result = await wallet_client.cat_asset_id_to_name(bytes.fromhex(asset_id))
