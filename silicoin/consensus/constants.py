@@ -54,11 +54,17 @@ class ConsensusConstants:
     WEIGHT_PROOF_THRESHOLD: uint8
     WEIGHT_PROOF_RECENT_BLOCKS: uint32
     MAX_BLOCK_COUNT_PER_REQUESTS: uint32
+    STAKING_ESTIMATE_BLOCK_RANGE: uint32
     BLOCKS_CACHE_SIZE: uint32
     NETWORK_TYPE: int
     MAX_GENERATOR_SIZE: uint32
     MAX_GENERATOR_REF_LIST_SIZE: uint32
     POOL_SUB_SLOT_ITERS: uint64
+
+    # hardfork block of rewarding change.
+    HF_BLOCK_REWARD: int
+    # hardfork block of staking change.
+    HF_BLOCK_STAKING: int
 
     def replace(self, **changes) -> "ConsensusConstants":
         return dataclasses.replace(self, **changes)
@@ -79,3 +85,9 @@ class ConsensusConstants:
                 filtered_changes[k] = v
 
         return dataclasses.replace(self, **filtered_changes)
+
+    def reward_hardfork_activated(self, height: uint32):
+        return self.HF_BLOCK_REWARD >= 0 and height >= self.HF_BLOCK_REWARD
+
+    def staking_hardfork_activated(self, _height: uint32):
+        return True

@@ -3,21 +3,25 @@ import dataclasses
 import logging
 import multiprocessing
 from concurrent.futures.process import ProcessPoolExecutor
+from decimal import Decimal
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple, Union
 
+from blspy import G1Element
 from clvm.casts import int_from_bytes
 
 from silicoin.consensus.block_body_validation import validate_block_body
 from silicoin.consensus.block_header_validation import validate_finished_header_block, validate_unfinished_header_block
 from silicoin.consensus.block_record import BlockRecord
 from silicoin.consensus.blockchain_interface import BlockchainInterface
+from silicoin.consensus.coinbase import create_puzzlehash_for_pk
 from silicoin.consensus.constants import ConsensusConstants
 from silicoin.consensus.cost_calculator import NPCResult
 from silicoin.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_difficulty
 from silicoin.consensus.find_fork_point import find_fork_point_in_chain
 from silicoin.consensus.full_block_to_block_record import block_to_block_record
 from silicoin.consensus.multiprocess_validation import PreValidationResult, pre_validate_blocks_multiprocessing
+from silicoin.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
 from silicoin.full_node.block_store import BlockStore
 from silicoin.full_node.coin_store import CoinStore
 from silicoin.full_node.hint_store import HintStore
@@ -182,7 +186,7 @@ class Blockchain(BlockchainInterface):
         invalid. Also returns the fork height, in the case of a new peak.
         """
         genesis: bool = block.height == 0
-        if self.contains_block(block.header_hash):
+        if self.contains_block_in_peak_chain(block.header_hash):
             return ReceiveBlockResult.ALREADY_HAVE_BLOCK, None, None, ([], {})
 
         if not self.contains_block(block.prev_header_hash) and not genesis:
@@ -222,7 +226,7 @@ class Blockchain(BlockchainInterface):
                 npc_result = None
                 header_block = get_block_header(block, [], [])
 
-            required_iters, error = validate_finished_header_block(
+            required_iters, _, error = validate_finished_header_block(
                 self.constants,
                 self,
                 header_block,
@@ -354,13 +358,19 @@ class Blockchain(BlockchainInterface):
             return None, None, [], ([], {})
 
         assert peak is not None
-        if block_record.weight > peak.weight:
+        # if block_record.weight > peak.weight:
+        if True:
             # Find the fork. if the block is just being appended, it will return the peak
             # If no blocks in common, returns -1, and reverts all blocks
             if block_record.prev_hash == peak.header_hash:
                 fork_height: int = peak.height
             elif fork_point_with_peak is not None:
                 fork_height = fork_point_with_peak
+            elif not self.contains_block_in_peak_chain(block_record.header_hash) and self.contains_block_in_peak_chain(
+                block_record.prev_hash
+            ):
+                # special case
+                fork_height = block_record.height - 1
             else:
                 fork_height = find_fork_point_in_chain(self, block_record, peak)
 
@@ -567,7 +577,7 @@ class Blockchain(BlockchainInterface):
             not self.contains_block(block.prev_header_hash)
             and not block.prev_header_hash == self.constants.GENESIS_CHALLENGE
         ):
-            return PreValidationResult(uint16(Err.INVALID_PREV_BLOCK_HASH.value), None, None)
+            return PreValidationResult(uint16(Err.INVALID_PREV_BLOCK_HASH.value), None, None, None)
 
         unfinished_header_block = UnfinishedHeaderBlock(
             block.finished_sub_slots,
@@ -582,18 +592,19 @@ class Blockchain(BlockchainInterface):
         sub_slot_iters, difficulty = get_next_sub_slot_iters_and_difficulty(
             self.constants, len(unfinished_header_block.finished_sub_slots) > 0, prev_b, self
         )
-        required_iters, error = validate_unfinished_header_block(
+        required_iters, difficulty_coeff, error = validate_unfinished_header_block(
             self.constants,
             self,
             unfinished_header_block,
             False,
             difficulty,
             sub_slot_iters,
+            self.coin_store,
             skip_overflow_ss_validation,
         )
 
         if error is not None:
-            return PreValidationResult(uint16(error.code.value), None, None)
+            return PreValidationResult(uint16(error.code.value), None, None, None)
 
         prev_height = (
             -1
@@ -607,9 +618,9 @@ class Blockchain(BlockchainInterface):
             try:
                 block_generator: Optional[BlockGenerator] = await self.get_block_generator(block)
             except ValueError:
-                return PreValidationResult(uint16(Err.GENERATOR_REF_HAS_NO_GENERATOR.value), None, None)
+                return PreValidationResult(uint16(Err.GENERATOR_REF_HAS_NO_GENERATOR.value), None, None, None)
             if block_generator is None:
-                return PreValidationResult(uint16(Err.GENERATOR_REF_HAS_NO_GENERATOR.value), None, None)
+                return PreValidationResult(uint16(Err.GENERATOR_REF_HAS_NO_GENERATOR.value), None, None, None)
             npc_result = get_name_puzzle_conditions(
                 block_generator,
                 min(self.constants.MAX_BLOCK_COST_CLVM, block.transactions_info.cost),
@@ -630,9 +641,9 @@ class Blockchain(BlockchainInterface):
         )
 
         if error_code is not None:
-            return PreValidationResult(uint16(error_code.value), None, None)
+            return PreValidationResult(uint16(error_code.value), None, None, None)
 
-        return PreValidationResult(None, required_iters, cost_result)
+        return PreValidationResult(None, required_iters, cost_result, str(difficulty_coeff))
 
     async def pre_validate_blocks_multiprocessing(
         self,
@@ -660,6 +671,13 @@ class Blockchain(BlockchainInterface):
         that we have added but no longer keep in memory.
         """
         return header_hash in self.__block_records
+
+    def contains_block_in_peak_chain(self, header_hash: bytes32) -> bool:
+        "True if the header_hash is in current chain"
+        block = self.try_block_record(header_hash)
+        if block is None:
+            return False
+        return self.__height_to_hash.get(block.height) == header_hash
 
     def block_record(self, header_hash: bytes32) -> BlockRecord:
         return self.__block_records[header_hash]
@@ -924,3 +942,94 @@ class Blockchain(BlockchainInterface):
                     result.append(GeneratorArg(ref_block.height, ref_block.transactions_generator))
         assert len(result) == len(ref_list)
         return BlockGenerator(block.transactions_generator, result)
+
+    async def get_network_space(self, newer: bytes32, older: bytes32) -> uint128:
+        newer_block = await self.block_store.get_block_record(newer)
+        if newer_block is None:
+            raise ValueError("Newer block not found")
+        older_block = await self.block_store.get_block_record(older)
+        if older_block is None:
+            raise ValueError("Older block not found")
+        delta_weight = newer_block.weight - older_block.weight
+
+        delta_iters = newer_block.total_iters - older_block.total_iters
+        weight_div_iters = delta_weight / delta_iters
+        additional_difficulty_constant = self.constants.DIFFICULTY_CONSTANT_FACTOR
+        eligible_plots_filter_multiplier = 2 ** self.constants.NUMBER_ZERO_BITS_PLOT_FILTER
+        network_space_bytes_estimate = (
+            UI_ACTUAL_SPACE_CONSTANT_FACTOR
+            * weight_div_iters
+            * additional_difficulty_constant
+            * eligible_plots_filter_multiplier
+        )
+        return uint128(int(network_space_bytes_estimate))
+
+    async def get_peak_network_space(self, block_range: int, peak: Optional[BlockRecord]) -> uint128:
+        if peak is not None and peak.height > 1:
+            # Average over the last day
+            older_header_hash = self.height_to_hash(uint32(max(1, peak.height - block_range)))
+            assert older_header_hash is not None
+            return await self.get_network_space(peak.header_hash, older_header_hash)
+        else:
+            return uint128(0)
+
+    async def get_farmer_difficulty_coeff(
+        self,
+        farmer_public_key: G1Element,
+        height: Optional[uint32] = None,
+        blocks: Optional[uint64] = None,
+    ) -> Decimal:
+        block_range = self.constants.STAKING_ESTIMATE_BLOCK_RANGE
+
+        peak: Optional[BlockRecord] = None
+        peak_height = height
+        if peak_height is None:
+            peak_height = self._peak_height
+        if peak_height is not None:
+            if peak_height == 0:
+                return Decimal(20)
+            header_hash = self.height_to_hash(peak_height)
+            peak = await self.block_store.get_block_record(header_hash)
+
+        if blocks is None:
+            curr: Optional[BlockRecord] = peak
+            begin_height = max((curr.height if curr is not None else 0) - block_range, 1)
+            blocks = 0
+            while curr is not None and curr.height > begin_height:
+                if curr.farmer_public_key == farmer_public_key:
+                    blocks += 1
+                curr = self.try_block_record(curr.prev_hash)
+        network_space = await self.get_peak_network_space(block_range, peak)
+        staking = await self.get_peak_farmer_staking(farmer_public_key, peak)
+        minimal_staking = Decimal(network_space) / (block_range * 100)
+
+        coeff = Decimal(0)
+        space = 0
+        if minimal_staking == 0 or staking < minimal_staking:
+            coeff = Decimal(20)
+        else:
+            if blocks == 0:
+                coeff = Decimal(1)
+            else:
+                # multiple 1000 to keep same scale as sit
+                space = uint128(int(network_space * blocks / block_range))
+
+                if space == 0:
+                    coeff = Decimal(1)
+                elif staking >= space:
+                    coeff = Decimal("0.5") + Decimal(1) / (Decimal(staking) / space + 1)
+                else:
+                    coeff = Decimal("0.05") + Decimal(1) / (Decimal(staking) / space + Decimal("0.05"))
+
+        # log.info(
+        #     f"minimal_staking : {minimal_staking}, space : {space} "
+        #     f"Difficulty coefficient: {coeff}, staking: {staking}, total space: {network_space}, "
+        #     f"blocks: {blocks}, peak_height: {peak_height}"
+        # )
+
+        return coeff
+
+    async def get_peak_farmer_staking(self, farmer_public_key: G1Element, peak: Optional[BlockRecord]) -> uint64:
+        ph = create_puzzlehash_for_pk(farmer_public_key)
+        coins = await self.coin_store.get_unspent_coins_before_height(ph, peak.height if peak is not None else 0)
+        return sum(coin.coin.amount for coin in coins)

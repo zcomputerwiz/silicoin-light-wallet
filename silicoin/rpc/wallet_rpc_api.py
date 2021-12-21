@@ -34,6 +34,8 @@ from silicoin.wallet.wallet_info import WalletInfo
 from silicoin.wallet.wallet_node import WalletNode
 from silicoin.util.config import load_config
 from silicoin.consensus.coinbase import create_puzzlehash_for_pk
+from silicoin.pools.pool_puzzles import SINGLETON_MOD_HASH, create_p2_singleton_puzzle
+from silicoin.types.blockchain_format.program import Program, SerializedProgram
 
 # Timeout for response from wallet/full node for sending a transaction
 TIMEOUT = 30
@@ -1261,4 +1263,32 @@ class WalletRpcApi:
         return {
             "state": state.to_json_dict(),
             "unconfirmed_transactions": unconfirmed_transactions,
+        }
+
+    async def recover_pool_nft(self, request):
+        aggregated_signature: str = "0xc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        launcher_hash = bytes32(hexstr_to_bytes(request["launcher_hash"]))
+        contract_hash = bytes32(hexstr_to_bytes(request["contract_hash"]))
+        delay = uint64(604800)
+        puzzle_hashes = await self.service.wallet_state_manager.puzzle_store.get_all_puzzle_hashes()
+        for puzzle_hash_b32 in puzzle_hashes:
+            puzzle = create_p2_singleton_puzzle(SINGLETON_MOD_HASH, launcher_hash, delay, puzzle_hash_b32)
+
+            if contract_hash == puzzle.get_tree_hash():
+                program_puzzle = bytes(SerializedProgram.from_program(puzzle))
+                break
+        else:
+            assert False, "the nft doesn't belong to you"
+        solutions = []
+        for coin in request["coins"]:
+            coin = Coin.from_json_dict(coin)
+            assert coin.puzzle_hash == contract_hash, "invalid coin"
+            coin_solution_hex: str = bytes(SerializedProgram.from_program(Program.to([uint64(coin.amount), 0]))).hex()
+            solutions.append({"coin": coin, "puzzle_reveal": program_puzzle.hex(), "solution": coin_solution_hex})
+
+        return {
+            "spend_bundle": {
+                "aggregated_signature": aggregated_signature,
+                "coin_solutions": solutions,
+            }
         }

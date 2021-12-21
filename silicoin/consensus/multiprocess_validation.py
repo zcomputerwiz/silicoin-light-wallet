@@ -36,9 +36,11 @@ class PreValidationResult(Streamable):
     error: Optional[uint16]
     required_iters: Optional[uint64]  # Iff error is None
     npc_result: Optional[NPCResult]  # Iff error is None and block is a transaction block
+    difficulty_coeff: Optional[str]
 
 
 def batch_pre_validate_blocks(
+    blockchain: BlockchainInterface,
     constants_dict: Dict,
     blocks_pickled: Dict[bytes, bytes],
     full_blocks_pickled: Optional[List[bytes]],
@@ -86,9 +88,9 @@ def batch_pre_validate_blocks(
                     removals, tx_additions = tx_removals_and_additions(npc_result.npc_list)
 
                 header_block = get_block_header(block, tx_additions, removals)
-                required_iters, error = validate_finished_header_block(
+                required_iters, difficulty_coeff, error = validate_finished_header_block(
                     constants,
-                    BlockCache(blocks),
+                    BlockCache(blocks, inner=blockchain),
                     header_block,
                     check_filter,
                     expected_difficulty[i],
@@ -98,18 +100,18 @@ def batch_pre_validate_blocks(
                 if error is not None:
                     error_int = uint16(error.code.value)
 
-                results.append(PreValidationResult(error_int, required_iters, npc_result))
+                results.append(PreValidationResult(error_int, required_iters, npc_result, str(difficulty_coeff)))
             except Exception:
                 error_stack = traceback.format_exc()
                 log.error(f"Exception: {error_stack}")
-                results.append(PreValidationResult(uint16(Err.UNKNOWN.value), None, None))
+                results.append(PreValidationResult(uint16(Err.UNKNOWN.value), None, None, None))
     elif header_blocks_pickled is not None:
         for i in range(len(header_blocks_pickled)):
             try:
                 header_block = HeaderBlock.from_bytes(header_blocks_pickled[i])
-                required_iters, error = validate_finished_header_block(
+                required_iters, difficulty_coeff, error = validate_finished_header_block(
                     constants,
-                    BlockCache(blocks),
+                    BlockCache(blocks, inner=blockchain),
                     header_block,
                     check_filter,
                     expected_difficulty[i],
@@ -118,11 +120,11 @@ def batch_pre_validate_blocks(
                 error_int = None
                 if error is not None:
                     error_int = uint16(error.code.value)
-                results.append(PreValidationResult(error_int, required_iters, None))
+                results.append(PreValidationResult(error_int, required_iters, None, str(difficulty_coeff)))
             except Exception:
                 error_stack = traceback.format_exc()
                 log.error(f"Exception: {error_stack}")
-                results.append(PreValidationResult(uint16(Err.UNKNOWN.value), None, None))
+                results.append(PreValidationResult(uint16(Err.UNKNOWN.value), None, None, None))
     return [bytes(r) for r in results]
 
 
@@ -161,7 +163,7 @@ async def pre_validate_blocks_multiprocessing(
     num_blocks_seen = 0
     if blocks[0].height > 0:
         if not block_records.contains_block(blocks[0].prev_header_hash):
-            return [PreValidationResult(uint16(Err.INVALID_PREV_BLOCK_HASH.value), None, None)]
+            return [PreValidationResult(uint16(Err.INVALID_PREV_BLOCK_HASH.value), None, None, None)]
         curr = block_records.block_record(blocks[0].prev_header_hash)
         num_sub_slots_to_look_for = 3 if curr.overflow else 2
         while (
@@ -197,7 +199,9 @@ async def pre_validate_blocks_multiprocessing(
         )
 
         overflow = is_overflow_block(constants, block.reward_chain_block.signage_point_index)
-        challenge = get_block_challenge(constants, block, BlockCache(recent_blocks), prev_b is None, overflow, False)
+        challenge = get_block_challenge(
+            constants, block, BlockCache(recent_blocks, inner=block_records), prev_b is None, overflow, False
+        )
         if block.reward_chain_block.challenge_chain_sp_vdf is None:
             cc_sp_hash: bytes32 = challenge
         else:
@@ -211,11 +215,16 @@ async def pre_validate_blocks_multiprocessing(
                     block_records.remove_block_record(block_i.header_hash)
             return None
 
+        difficulty_coeff = await block_records.get_farmer_difficulty_coeff(
+            block.reward_chain_block.proof_of_space.farmer_public_key, block.height - 1 if block.height > 0 else 0
+        )
+        log.info(f"[debug] validating {block.reward_chain_block.height}, {difficulty_coeff}")
         required_iters: uint64 = calculate_iterations_quality(
             constants.DIFFICULTY_CONSTANT_FACTOR,
             q_str,
             block.reward_chain_block.proof_of_space.size,
             difficulty,
+            difficulty_coeff,
             cc_sp_hash,
         )
 

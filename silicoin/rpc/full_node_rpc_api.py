@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from silicoin.consensus.block_record import BlockRecord
 from silicoin.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
+from silicoin.consensus.coinbase import create_puzzlehash_for_pk
 from silicoin.full_node.full_node import FullNode
 from silicoin.full_node.mempool_check_conditions import get_puzzle_and_solution_for_coin
 from silicoin.types.blockchain_format.program import Program, SerializedProgram
@@ -13,6 +14,7 @@ from silicoin.types.generator_types import BlockGenerator
 from silicoin.types.mempool_inclusion_status import MempoolInclusionStatus
 from silicoin.types.spend_bundle import SpendBundle
 from silicoin.types.unfinished_header_block import UnfinishedHeaderBlock
+from silicoin.util.bech32m import encode_puzzle_hash
 from silicoin.util.byte_types import hexstr_to_bytes
 from silicoin.util.ints import uint32, uint64, uint128
 from silicoin.util.ws_message import WsRpcMessage, create_payload_dict
@@ -53,6 +55,7 @@ class FullNodeRpcApi:
             "/get_all_mempool_tx_ids": self.get_all_mempool_tx_ids,
             "/get_all_mempool_items": self.get_all_mempool_items,
             "/get_mempool_item_by_tx_id": self.get_mempool_item_by_tx_id,
+            "/pk_to_ph": self.pk_to_ph,
         }
 
     async def _state_changed(self, change: str) -> List[WsRpcMessage]:
@@ -600,3 +603,12 @@ class FullNodeRpcApi:
             raise ValueError(f"Tx id 0x{tx_id.hex()} not in the mempool")
 
         return {"mempool_item": item}
+
+    async def pk_to_ph(self, request: Dict) -> Optional[Dict]:
+        if "public_key" not in request:
+            raise ValueError("No public_key in request")
+        public_key: bytes32 = hexstr_to_bytes(request["public_key"])
+        selected = self.service.config["selected_network"]
+        prefix = self.service.config["network_overrides"]["config"][selected]["address_prefix"]
+
+        return {"ph": encode_puzzle_hash(create_puzzlehash_for_pk(public_key), prefix)}
