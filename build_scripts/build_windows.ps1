@@ -75,9 +75,9 @@ Write-Output "   ---"
 Copy-Item "dist\daemon" -Destination "..\silicoin-light-gui\packages\wallet" -Recurse
 Set-Location -Path "..\silicoin-light-gui" -PassThru
 # We need the code sign cert in the gui subdirectory so we can actually sign the UI package
-If ($env:HAS_SECRET) {
-    Copy-Item "win_code_sign_cert.p12" -Destination "packages\gui\"
-}
+# If ($env:HAS_SECRET) {
+#     Copy-Item "win_code_sign_cert.p12" -Destination "packages\gui\"
+# }
 
 git status
 
