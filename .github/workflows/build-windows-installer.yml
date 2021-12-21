@@ -88,7 +88,7 @@ jobs:
     #   uses: kitek/decode-base64-into-file-action@1.0
     #   with:
     #     encoded-value: ${{ secrets.WIN_CODE_SIGN_CERT }}
-    #     destination-file: .\silicoin-blockchain-gui\win_code_sign_cert.p12
+    #     destination-file: .\silicoin-light-gui\win_code_sign_cert.p12
 
     # Create our own venv outside of the git directory JUST for getting the ACTUAL version so that install can't break it
     - name: Get version number
@@ -115,13 +115,13 @@ jobs:
       uses: actions/upload-artifact@v2.2.2
       with:
         name: Windows-Exe
-        path: ${{ github.workspace }}\silicoin-blockchain-gui\Silicoin-win32-x64\
+        path: ${{ github.workspace }}\silicoin-light-gui\Silicoin-win32-x64\
 
     - name: Upload Installer to artifacts
       uses: actions/upload-artifact@v2.2.2
       with:
         name: Windows-Installers
-        path: ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\
+        path: ${{ github.workspace }}\silicoin-light-gui\release-builds\
 
 
     # - name: Install AWS CLI
@@ -142,16 +142,16 @@ jobs:
     #   env:
     #     SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
     #   run: |
-    #     ls ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/builds/
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/pacr-dev/
+    #     ls ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/builds/
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/pacr-dev/
 
     - name: Create Checksums
       env:
         SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
       run: |
-         certutil.exe -hashfile ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe SHA256 > ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256
-         ls ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\
+         certutil.exe -hashfile ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe SHA256 > ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256
+         ls ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\
 
     # - name: Install py3createtorrent
     #   if: startsWith(github.ref, 'refs/tags/')
@@ -161,7 +161,7 @@ jobs:
     # - name: Create torrent
     #   if: startsWith(github.ref, 'refs/tags/')
     #   run: |
-    #     py3createtorrent -f -t udp://tracker.opentrackr.org:1337/announce ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe -o ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.torrent --webseed https://download-silicoin-net.s3.us-west-2.amazonaws.com/install/SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe
+    #     py3createtorrent -f -t udp://tracker.opentrackr.org:1337/announce ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe -o ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.torrent --webseed https://download-silicoin-net.s3.us-west-2.amazonaws.com/install/SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe
     #     ls
 
     # - name: Upload Beta Installer
@@ -169,16 +169,16 @@ jobs:
     #   env:
     #     SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
     #   run: |
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/beta/SilicoinSetup-latest-beta.exe
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256 s3://download-silicoin-net/beta/SilicoinSetup-latest-beta.exe.sha256
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/beta/SilicoinSetup-latest-beta.exe
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256 s3://download-silicoin-net/beta/SilicoinSetup-latest-beta.exe.sha256
 
     # - name: Upload CATs Beta Installer
     #   if: steps.check_secrets.outputs.HAS_AWS_SECRET && github.ref == 'refs/heads/pacr-dev'
     #   env:
     #     SILICOIN_INSTALLER_VERSION: ${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}
     #   run: |
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/cats-beta-installers/SilicoinSetup-latest-cats-beta.exe
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256 s3://download-silicoin-net/cats-beta-installers/SilicoinSetup-latest-cats-beta.exe.sha256
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/cats-beta-installers/SilicoinSetup-latest-cats-beta.exe
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256 s3://download-silicoin-net/cats-beta-installers/SilicoinSetup-latest-cats-beta.exe.sha256
 
     # - name: Upload Release Files
     #   if: steps.check_secrets.outputs.HAS_AWS_SECRET && startsWith(github.ref, 'refs/tags/')
@@ -186,9 +186,9 @@ jobs:
     #     AWS_ACCESS_KEY_ID: ${{ secrets.INSTALLER_UPLOAD_KEY }}
     #     AWS_SECRET_ACCESS_KEY: ${{ secrets.INSTALLER_UPLOAD_SECRET }}
     #   run: |
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/install/
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256 s3://download-silicoin-net/install/
-    #     aws s3 cp ${{ github.workspace }}\silicoin-blockchain-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.torrent s3://download-silicoin-net/torrents/
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe s3://download-silicoin-net/install/
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.sha256 s3://download-silicoin-net/install/
+    #     aws s3 cp ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe.torrent s3://download-silicoin-net/torrents/
 
     - name: Get tag name
       if: startsWith(github.ref, 'refs/tags/')

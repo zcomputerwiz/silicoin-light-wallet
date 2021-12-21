@@ -70,10 +70,10 @@ $SPEC_FILE = (python -c 'import silicoin; print(silicoin.PYINSTALLER_SPEC_PATH)'
 pyinstaller --log-level INFO $SPEC_FILE
 
 Write-Output "   ---"
-Write-Output "Copy silicoin executables to silicoin-blockchain-gui\"
+Write-Output "Copy silicoin executables to silicoin-light-gui\"
 Write-Output "   ---"
-Copy-Item "dist\daemon" -Destination "..\silicoin-blockchain-gui\packages\wallet" -Recurse
-Set-Location -Path "..\silicoin-blockchain-gui" -PassThru
+Copy-Item "dist\daemon" -Destination "..\silicoin-light-gui\packages\wallet" -Recurse
+Set-Location -Path "..\silicoin-light-gui" -PassThru
 Copy-Item "win_code_sign_cert.p12" -Destination "packages\wallet\"
 
 git status
