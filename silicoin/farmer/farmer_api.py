@@ -441,6 +441,12 @@ class FarmerAPI:
                         p2_singleton_puzzle_hash,
                     )
                 )
+            rsp: Optional[farmer_protocol.FarmerStakings] = await peer.request_stakings(
+                farmer_protocol.RequestStakings(public_keys=self.farmer.get_public_keys(), height=None, blocks=None)
+            )
+            if rsp is None or not isinstance(rsp, farmer_protocol.FarmerStakings):
+                self.log.warning(f"bad RequestStakings response from peer {rsp}")
+                return
             message = harvester_protocol.NewSignagePointHarvester(
                 new_signage_point.challenge_hash,
                 new_signage_point.difficulty,
@@ -448,6 +454,7 @@ class FarmerAPI:
                 new_signage_point.signage_point_index,
                 new_signage_point.challenge_chain_sp,
                 pool_difficulties,
+                rsp.stakings,
             )
 
             msg = make_msg(ProtocolMessageTypes.new_signage_point_harvester, message)
@@ -513,3 +520,7 @@ class FarmerAPI:
     @peer_required
     async def respond_plots(self, _: harvester_protocol.RespondPlots, peer: ws.WSSilicoinConnection):
         self.farmer.log.warning(f"Respond plots came too late from: {peer.get_peer_logging()}")
+
+    @api_request
+    async def respond_stakings(self, response: farmer_protocol.FarmerStakings):
+        self.farmer.log.warning("Respond stakings came too late")

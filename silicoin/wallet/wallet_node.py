@@ -6,8 +6,9 @@ import time
 import traceback
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, Tuple, Union, Any
+from decimal import Decimal
 
-from blspy import PrivateKey, AugSchemeMPL
+from blspy import PrivateKey, AugSchemeMPL, G1Element
 from packaging.version import Version
 
 from silicoin.consensus.block_record import BlockRecord
@@ -70,6 +71,7 @@ from silicoin.wallet.transaction_record import TransactionRecord
 from silicoin.wallet.util.wallet_types import WalletType
 from silicoin.wallet.wallet_action import WalletAction
 from silicoin.util.profiler import profile_task
+from silicoin.protocols import farmer_protocol
 
 
 class PeerRequestCache:
@@ -578,6 +580,33 @@ class WalletNode:
                 return True
         return False
 
+    async def update_stakings(self, peer: WSSilicoinConnection, height: uint64, farmer_public_key: G1Element) -> None:
+        "fetch staking"
+        height = height - 1 if height > 0 else 0
+        blockchain = self.wallet_state_manager.blockchain
+
+        # calculate blocks from cache
+        blocks = 0
+        if blockchain.get_peak_height() is not None:
+            block_range = self.constants.STAKING_ESTIMATE_BLOCK_RANGE
+            curr: Optional[BlockRecord] = blockchain.try_block_record(blockchain.height_to_hash(height))
+            begin_height = max((curr.height if curr is not None else 0) - block_range, 1)
+            while curr is not None and curr.height > begin_height:
+                if curr.farmer_public_key == farmer_public_key:
+                    blocks += 1
+                curr = blockchain.try_block_record(curr.prev_hash)
+
+        res: Optional[farmer_protocol.FarmerStakings] = await peer.request_stakings(
+            farmer_protocol.RequestStakings(
+                public_keys=[farmer_public_key],
+                height=height,
+                blocks=blocks,
+            )
+        )
+        if res is None or not isinstance(res, farmer_protocol.FarmerStakings):
+            raise ValueError("Peer returned no response")
+        self.wallet_state_manager.blockchain.stakings.update({bytes(k): Decimal(v) for k, v in res.stakings})
+
     async def fetch_last_tx_from_peer(self, height: uint32, peer: WSSilicoinConnection) -> Optional[HeaderBlock]:
         request_height = height
         while True:
@@ -803,6 +832,9 @@ class WalletNode:
         all_txs_per_wallet: Dict[int, List[TransactionRecord]] = {}
 
         for block in header_blocks:
+            await self.update_stakings(
+                peer, block.height, block.reward_chain_block.proof_of_space.farmer_public_key
+            )
             if block.is_transaction_block:
                 # Find additions and removals
                 (additions, removals,) = await self.wallet_state_manager.get_filter_additions_removals(

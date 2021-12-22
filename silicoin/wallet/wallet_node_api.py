@@ -164,3 +164,7 @@ class WalletNodeAPI:
     @api_request
     async def respond_blocks(self, request: full_node_protocol.RespondBlocks) -> None:
         pass
+
+    @api_request
+    async def respond_stakings(self, response: farmer_protocol.FarmerStakings):
+        self.farmer.log.warning("Respond stakings came too late")

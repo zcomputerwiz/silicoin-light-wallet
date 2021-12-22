@@ -14,6 +14,8 @@ from silicoin.util.errors import Err
 from silicoin.util.ints import uint32, uint64
 from silicoin.wallet.key_val_store import KeyValStore
 from silicoin.wallet.wallet_weight_proof_handler import WalletWeightProofHandler
+from decimal import Decimal
+from blspy import G1Element
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +34,7 @@ class WalletBlockchain(BlockchainInterface):
     _sub_slot_iters: uint64
     _difficulty: uint64
     CACHE_SIZE: int
+    stakings: Dict[bytes, uint64] = {}
 
     @staticmethod
     async def create(
@@ -213,3 +216,8 @@ class WalletBlockchain(BlockchainInterface):
 
         for header_hash in to_remove:
             del self._block_records[header_hash]
+
+    async def get_farmer_difficulty_coeff(
+        self, farmer_public_key: G1Element, height: Optional[uint32] = None
+    ) -> Decimal:
+        return self.stakings.get(bytes(farmer_public_key), Decimal(20))

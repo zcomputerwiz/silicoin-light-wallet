@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, List, Tuple
 
 from blspy import AugSchemeMPL, G2Element, G1Element
+from decimal import Decimal
 
 from silicoin.consensus.pot_iterations import calculate_iterations_quality, calculate_sp_interval_iters
 from silicoin.harvester.harvester import Harvester
@@ -66,6 +67,8 @@ class HarvesterAPI:
 
         start = time.time()
         assert len(new_challenge.challenge_hash) == 32
+
+        stakings = {bytes(k): Decimal(v) for k, v in new_challenge.stakings}
 
         loop = asyncio.get_running_loop()
 
@@ -163,6 +166,16 @@ class HarvesterAPI:
             all_responses: List[harvester_protocol.NewProofOfSpace] = []
             if self.harvester._is_shutdown:
                 return filename, []
+
+            if stakings:
+                try:
+                    difficulty_coeff = stakings[bytes(plot_info.farmer_public_key)]
+                except KeyError as e:
+                    self.harvester.log.error(f"Error get staking for public key {plot_info.farmer_public_key}, {e}")
+                    return filename, []
+            else:
+                difficulty_coeff = Decimal(1)
+
             proofs_of_space_and_q: List[Tuple[bytes32, ProofOfSpace]] = await loop.run_in_executor(
                 self.harvester.executor, blocking_lookup, filename, plot_info
             )
@@ -174,6 +187,7 @@ class HarvesterAPI:
                         quality_str.hex() + str(filename.resolve()),
                         proof_of_space,
                         new_challenge.signage_point_index,
+                        str(difficulty_coeff),
                     )
                 )
             return filename, all_responses
