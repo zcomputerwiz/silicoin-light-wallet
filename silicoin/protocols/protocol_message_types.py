@@ -97,3 +97,7 @@ class ProtocolMessageTypes(Enum):
     respond_children = 75
     request_ses_hashes = 76
     respond_ses_hashes = 77
+
+    # Stakings
+    request_stakings = 100
+    respond_stakings = 101
