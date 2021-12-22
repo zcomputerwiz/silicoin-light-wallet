@@ -37,7 +37,8 @@ class BlockStore:
         await self.db.execute(
             "CREATE TABLE IF NOT EXISTS block_records(header_hash "
             "text PRIMARY KEY, prev_hash text, height bigint,"
-            "block blob, sub_epoch_summary blob, is_peak tinyint, is_block tinyint)"
+            "block blob, sub_epoch_summary blob, is_peak tinyint, is_block tinyint,"
+            "farmer_public_key BLOB)"
         )
 
         # todo remove in v1.2
@@ -85,7 +86,7 @@ class BlockStore:
         await cursor_1.close()
 
         cursor_2 = await self.db.execute(
-            "INSERT OR REPLACE INTO block_records VALUES(?, ?, ?, ?,?, ?, ?)",
+            "INSERT OR REPLACE INTO block_records VALUES(?, ?, ?, ?,?, ?, ?, ?)",
             (
                 header_hash.hex(),
                 block.prev_header_hash.hex(),
@@ -96,6 +97,7 @@ class BlockStore:
                 else bytes(block_record.sub_epoch_summary_included),
                 False,
                 block.is_transaction_block(),
+                bytes(block_record.farmer_public_key),
             ),
         )
         await cursor_2.close()

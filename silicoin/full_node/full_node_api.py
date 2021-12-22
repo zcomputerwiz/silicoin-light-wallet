@@ -817,6 +817,7 @@ class FullNodeAPI:
                     uint32(0),
                 )
                 farmer_ph = self.full_node.constants.GENESIS_PRE_FARM_FARMER_PUZZLE_HASH
+                difficulty_coeff = 20.0
             else:
                 farmer_ph = request.farmer_puzzle_hash
                 if request.proof_of_space.pool_contract_puzzle_hash is not None:
@@ -824,6 +825,10 @@ class FullNodeAPI:
                 else:
                     assert request.pool_target is not None
                     pool_target = request.pool_target
+
+                difficulty_coeff = await self.full_node.blockchain.get_farmer_difficulty_coeff(
+                    request.proof_of_space.farmer_public_key
+                )
 
             if peak is None or peak.height <= self.full_node.constants.MAX_SUB_SLOT_BLOCKS:
                 difficulty = self.full_node.constants.DIFFICULTY_STARTING
@@ -842,6 +847,7 @@ class FullNodeAPI:
                 quality_string,
                 request.proof_of_space.size,
                 difficulty,
+                difficulty_coeff,
                 request.challenge_chain_sp,
             )
             sp_iters: uint64 = calculate_sp_iters(self.full_node.constants, sub_slot_iters, request.signage_point_index)
@@ -1328,6 +1334,17 @@ class FullNodeAPI:
         if self.full_node.sync_store.get_sync_mode():
             return None
         await self.full_node.respond_compact_vdf(request, peer)
+
+    @api_request
+    async def request_stakings(self, request: farmer_protocol.RequestStakings) -> Optional[Message]:
+        stakings = []
+        for pk in request.public_keys:
+            difficulty_coeff = await self.full_node.blockchain.get_farmer_difficulty_coeff(
+                pk, request.height, request.blocks
+            )
+            stakings.append((pk, str(difficulty_coeff)))
+        msg = make_msg(ProtocolMessageTypes.respond_stakings, farmer_protocol.FarmerStakings(stakings=stakings))
+        return msg
 
     @peer_required
     @api_request

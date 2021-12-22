@@ -1325,6 +1325,7 @@ def _validate_pospace_recent_chain(
         q_str,
         block.reward_chain_block.proof_of_space.size,
         diff,
+        0.5,
         cc_sp_hash,
     )
     return required_iters
@@ -1372,6 +1373,7 @@ def __validate_pospace(
         q_str,
         sub_slot_data.proof_of_space.size,
         curr_diff,
+        0.5,
         cc_sp_hash,
     )
 

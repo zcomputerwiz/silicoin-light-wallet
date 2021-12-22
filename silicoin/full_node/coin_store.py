@@ -434,3 +434,19 @@ class CoinStore:
         await self.coin_record_db.executemany(
             "UPDATE OR FAIL coin_record SET spent=1,spent_index=? WHERE coin_name=?", updates
         )
+
+    async def get_unspent_coins_before_height(self, puzzle_hash: bytes, height: uint32) -> List[CoinRecord]:
+        coins = set()
+        cursor = await self.coin_record_db.execute(
+            "SELECT * from coin_record INDEXED BY coin_puzzle_hash WHERE puzzle_hash=? "
+            "AND confirmed_index<? "
+            "AND (spent=0 OR spent_index>=?) ",
+            (puzzle_hash.hex(), height, height),
+        )
+        rows = await cursor.fetchall()
+
+        await cursor.close()
+        for row in rows:
+            coin = Coin(bytes32(bytes.fromhex(row[6])), bytes32(bytes.fromhex(row[5])), uint64.from_bytes(row[7]))
+            coins.add(CoinRecord(coin, row[1], row[2], row[3], row[4], row[8]))
+        return list(coins)

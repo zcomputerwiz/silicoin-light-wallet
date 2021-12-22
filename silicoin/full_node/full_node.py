@@ -4,6 +4,7 @@ import logging
 import random
 import time
 import traceback
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
@@ -59,6 +60,7 @@ from silicoin.util.db_wrapper import DBWrapper
 from silicoin.util.errors import ConsensusError, Err
 from silicoin.util.ints import uint8, uint32, uint64, uint128
 from silicoin.util.path import mkdir, path_from_root
+from silicoin.util.profiler import profile_task
 from silicoin.util.safe_cancel_task import cancel_task_safe
 from silicoin.util.profiler import profile_task
 from datetime import datetime
@@ -438,7 +440,7 @@ class FullNode:
 
             if request.height < curr_peak_height + self.config["sync_blocks_behind_threshold"]:
                 # This case of being behind but not by so much
-                if await self.short_sync_batch(peer, uint32(max(curr_peak_height - 6, 0)), request.height):
+                if await self.short_sync_batch(peer, uint32(max(curr_peak_height - 128, 0)), request.height):
                     return None
 
             # This is the either the case where we were not able to sync successfully (for example, due to the fork
@@ -456,6 +458,9 @@ class FullNode:
         if peak_block is not None:
             peak = self.blockchain.block_record(peak_block.header_hash)
             difficulty = self.blockchain.get_next_difficulty(peak.header_hash, False)
+            difficulty_coeff = await self.blockchain.get_farmer_difficulty_coeff(
+                peak.farmer_public_key, peak.height - 1 if peak.height > 0 else 0
+            )
             ses: Optional[SubEpochSummary] = next_sub_epoch_summary(
                 self.constants,
                 self.blockchain,
@@ -486,6 +491,7 @@ class FullNode:
             timelord_new_peak: timelord_protocol.NewPeakTimelord = timelord_protocol.NewPeakTimelord(
                 peak_block.reward_chain_block,
                 difficulty,
+                str(difficulty_coeff),
                 peak.deficit,
                 peak.sub_slot_iters,
                 ses,
@@ -920,7 +926,8 @@ class FullNode:
 
         blocks_to_validate: List[FullBlock] = []
         for i, block in enumerate(all_blocks):
-            if not self.blockchain.contains_block(block.header_hash):
+            # If the block is not on current chain, re-validate
+            if not self.blockchain.contains_block_in_peak_chain(block.header_hash):
                 blocks_to_validate = all_blocks[i:]
                 break
         if len(blocks_to_validate) == 0:
@@ -1539,6 +1546,7 @@ class FullNode:
             block.foliage,
             ses,
             rc_prev,
+            validate_result.difficulty_coeff,
         )
 
         timelord_msg = make_msg(ProtocolMessageTypes.new_unfinished_block_timelord, timelord_request)
