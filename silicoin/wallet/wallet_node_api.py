@@ -5,6 +5,7 @@ from silicoin.types.mempool_inclusion_status import MempoolInclusionStatus
 from silicoin.util.api_decorators import api_request, peer_required, execute_task
 from silicoin.util.errors import Err
 from silicoin.wallet.wallet_node import WalletNode
+from silicoin.protocols import farmer_protocol
 
 
 class WalletNodeAPI:
