@@ -101,4 +101,6 @@ class BlockCache(BlockchainInterface):
     async def get_farmer_difficulty_coeff(
         self, farmer_public_key: G1Element, height: Optional[uint32] = None
     ) -> Decimal:
+        if self._inner is None:
+            return 1
         return await self._inner.get_farmer_difficulty_coeff(farmer_public_key, height)
