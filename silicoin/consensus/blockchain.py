@@ -20,7 +20,11 @@ from silicoin.consensus.cost_calculator import NPCResult
 from silicoin.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_difficulty
 from silicoin.consensus.find_fork_point import find_fork_point_in_chain
 from silicoin.consensus.full_block_to_block_record import block_to_block_record
-from silicoin.consensus.multiprocess_validation import PreValidationResult, pre_validate_blocks_multiprocessing
+from silicoin.consensus.multiprocess_validation import (
+    PreValidationResult,
+    _run_generator,
+    pre_validate_blocks_multiprocessing,
+)
 from silicoin.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
 from silicoin.full_node.block_store import BlockStore
 from silicoin.full_node.coin_store import CoinStore
@@ -39,7 +43,7 @@ from silicoin.types.header_block import HeaderBlock
 from silicoin.types.unfinished_block import UnfinishedBlock
 from silicoin.types.unfinished_header_block import UnfinishedHeaderBlock
 from silicoin.types.weight_proof import SubEpochChallengeSegment
-from silicoin.util.errors import Err
+from silicoin.util.errors import ConsensusError, Err
 from silicoin.util.generator_tools import get_block_header, tx_removals_and_additions
 from silicoin.util.ints import uint16, uint32, uint64, uint128
 from silicoin.util.streamable import recurse_jsonify
@@ -80,8 +84,6 @@ class Blockchain(BlockchainInterface):
     coin_store: CoinStore
     # Store
     block_store: BlockStore
-    # Used to verify blocks in parallel
-    pool: ProcessPoolExecutor
     # Set holding seen compact proofs, in order to avoid duplicates.
     _seen_compact_proofs: Set[Tuple[VDFInfo, uint32]]
 
@@ -571,7 +573,7 @@ class Blockchain(BlockchainInterface):
         return list(reversed(recent_rc))
 
     async def validate_unfinished_block(
-        self, block: UnfinishedBlock, skip_overflow_ss_validation=True
+        self, block: UnfinishedBlock, npc_result: Optional[NPCResult], skip_overflow_ss_validation=True
     ) -> PreValidationResult:
         if (
             not self.contains_block(block.prev_header_hash)
@@ -612,21 +614,6 @@ class Blockchain(BlockchainInterface):
             else self.block_record(block.prev_header_hash).height
         )
 
-        npc_result = None
-        if block.transactions_generator is not None:
-            assert block.transactions_info is not None
-            try:
-                block_generator: Optional[BlockGenerator] = await self.get_block_generator(block)
-            except ValueError:
-                return PreValidationResult(uint16(Err.GENERATOR_REF_HAS_NO_GENERATOR.value), None, None, None)
-            if block_generator is None:
-                return PreValidationResult(uint16(Err.GENERATOR_REF_HAS_NO_GENERATOR.value), None, None, None)
-            npc_result = get_name_puzzle_conditions(
-                block_generator,
-                min(self.constants.MAX_BLOCK_COST_CLVM, block.transactions_info.cost),
-                cost_per_byte=self.constants.COST_PER_BYTE,
-                safe_mode=False,
-            )
         error_code, cost_result = await validate_block_body(
             self.constants,
             self,
@@ -638,6 +625,7 @@ class Blockchain(BlockchainInterface):
             npc_result,
             None,
             self.get_block_generator,
+            False,
         )
 
         if error_code is not None:
@@ -657,13 +645,27 @@ class Blockchain(BlockchainInterface):
             self.constants_json,
             self,
             blocks,
-            self.pool,
             True,
             npc_results,
             self.get_block_generator,
             batch_size,
             wp_summaries,
         )
+
+    async def run_generator(self, unfinished_block: bytes, generator: BlockGenerator) -> NPCResult:
+        task = asyncio.get_running_loop().run_in_executor(
+            self.pool,
+            _run_generator,
+            self.constants_json,
+            unfinished_block,
+            bytes(generator),
+        )
+        error, npc_result_bytes = await task
+        if error is not None:
+            raise ConsensusError(error)
+        if npc_result_bytes is None:
+            raise ConsensusError(Err.UNKNOWN)
+        return NPCResult.from_bytes(npc_result_bytes)
 
     def contains_block(self, header_hash: bytes32) -> bool:
         """

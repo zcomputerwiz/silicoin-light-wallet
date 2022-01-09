@@ -3,7 +3,7 @@ min_mainnet_k_size: 32
 # Send a ping to all peers after ping_interval seconds
 ping_interval: 120
 self_hostname: &self_hostname "localhost"
-daemon_port: 56401
+daemon_port: 56402
 daemon_max_message_size: 50000000 # maximum size of RPC message in bytes
 inbound_rate_limit_percent: 100
 outbound_rate_limit_percent: 30
@@ -74,14 +74,14 @@ logging: &logging
 
 harvester:
   # The harvester server (if run) will run on this port
-  port: 11448
+  port: 22448
   farmer_peer:
     host: *self_hostname
-    port: 11447
+    port: 22447
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
-  rpc_port: 11560
+  rpc_port: 22560
   num_threads: 30
   plots_refresh_parameter:
     interval_seconds: 120 # The interval in seconds to refresh the plot file manager
@@ -122,14 +122,14 @@ pool:
 
 farmer:
   # The farmer server (if run) will run on this port
-  port: 11447
+  port: 22447
   # The farmer will attempt to connect to this full node and harvester
   full_node_peer:
     host: *self_hostname
     port: 22222
   harvester_peer:
     host: *self_hostname
-    port: 11448
+    port: 22448
 
   pool_public_keys: []
 
@@ -138,7 +138,7 @@ farmer:
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
-  rpc_port: 11559
+  rpc_port: 22559
 
   # To send a share to a pool, a proof of space must have required_iters less than this number
   pool_share_threshold: 1000
@@ -156,7 +156,7 @@ farmer:
 timelord_launcher:
   # The server where the VDF clients will connect to.
   host: *self_hostname
-  port: 11000
+  port: 22000
   # Number of VDF client processes to keep alive in the local machine.
   process_count: 3
   logging: *logging
@@ -164,7 +164,7 @@ timelord_launcher:
 
 timelord:
   # The timelord server (if run) will run on this port
-  port: 11446
+  port: 22446
   # Provides a list of VDF clients expected to connect to this timelord.
   # For each client, an IP is provided, together with the estimated iterations per second.
   vdf_clients:
@@ -182,7 +182,7 @@ timelord:
   # The ip and port where the TCP clients will connect.
   vdf_server:
     host: *self_hostname
-    port: 11000
+    port: 22000
   logging: *logging
   network_overrides: *network_overrides
   selected_network: *selected_network
@@ -233,7 +233,7 @@ full_node:
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
-  rpc_port: 11555
+  rpc_port: 22555
 
   # Use UPnP to attempt to allow other full nodes to reach your node behind a gateway
   enable_upnp: True
@@ -287,16 +287,16 @@ full_node:
     - dns-introducer.sitnetwork.net
   farmer_peer:
       host: *self_hostname
-      port: 11447
+      port: 22447
   timelord_peer:
       host: *self_hostname
-      port: 11446
+      port: 22446
   introducer_peer:
       host: introducer.sitnetwork.net
       port: 21234
   wallet_peer:
     host: *self_hostname
-    port: 11449
+    port: 22449
   logging: *logging
   network_overrides: *network_overrides
   selected_network: *selected_network
@@ -309,10 +309,10 @@ full_node:
 
 ui:
    # The ui node server (if run) will run on this port
-  port: 11222
+  port: 22222
 
   # Which port to use to communicate with the full node
-  rpc_port: 11555
+  rpc_port: 22555
 
   # This SSH key is for the ui SSH server
   ssh_filename: config/ssh_host_key
@@ -330,7 +330,7 @@ ui:
 
 introducer:
   host: *self_hostname
-  port: 11445
+  port: 22445
   max_peers_to_send: 20
   # The introducer will only return peers who it has seen in the last
   # recent_peer_threshold seconds
@@ -344,12 +344,12 @@ introducer:
     public_key:  "config/ssl/full_node/public_full_node.key"
 
 wallet:
-  port: 11469
-  rpc_port: 11276
+  port: 22469
+  rpc_port: 22276
 
   enable_profiler: False
 
- # see description for full_node.db_sync
+  # see description for full_node.db_sync
   db_sync: auto
   connect_to_unknown_peers: True
   # The minimum height that we care about for our transactions. Set to zero

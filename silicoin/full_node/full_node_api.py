@@ -20,10 +20,10 @@ from silicoin.protocols import farmer_protocol, full_node_protocol, introducer_p
 from silicoin.protocols.full_node_protocol import RejectBlock, RejectBlocks
 from silicoin.protocols.protocol_message_types import ProtocolMessageTypes
 from silicoin.protocols.wallet_protocol import (
+    CoinState,
     PuzzleSolutionResponse,
     RejectHeaderBlocks,
     RejectHeaderRequest,
-    CoinState,
     RespondSESInfo,
 )
 from silicoin.server.outbound_message import Message, make_msg
@@ -39,6 +39,7 @@ from silicoin.types.generator_types import BlockGenerator
 from silicoin.types.mempool_inclusion_status import MempoolInclusionStatus
 from silicoin.types.mempool_item import MempoolItem
 from silicoin.types.peer_info import PeerInfo
+from silicoin.types.transaction_queue_entry import TransactionQueueEntry
 from silicoin.types.unfinished_block import UnfinishedBlock
 from silicoin.util.api_decorators import api_request, peer_required, bytes_required, execute_task, reply_type
 from silicoin.util.generator_tools import get_block_header
@@ -111,6 +112,14 @@ class FullNodeAPI:
         """
         # this semaphore limits the number of tasks that can call new_peak() at
         # the same time, since it can be expensive
+        waiter_count = len(self.full_node.new_peak_sem._waiters)
+
+        if waiter_count > 0:
+            self.full_node.log.debug(f"new_peak Waiters: {waiter_count}")
+
+        if waiter_count > 20:
+            return None
+
         async with self.full_node.new_peak_sem:
             return await self.full_node.new_peak(request, peer)
 
@@ -157,9 +166,10 @@ class FullNodeAPI:
                 counter = 0
                 try:
                     while True:
-                        # Limit to asking 10 peers, it's possible that this tx got included on chain already
-                        # Highly unlikely 10 peers that advertised a tx don't respond to a request
-                        if counter == 10:
+                        # Limit to asking to a few peers, it's possible that this tx got included on chain already
+                        # Highly unlikely that the peers that advertised a tx don't respond to a request. Also, if we
+                        # drop some transactions, we don't want to refetch too many times
+                        if counter == 5:
                             break
                         if transaction_id not in full_node.full_node_store.peers_with_tx:
                             break
@@ -233,7 +243,17 @@ class FullNodeAPI:
             self.full_node.full_node_store.pending_tx_request.pop(spend_name)
         if spend_name in self.full_node.full_node_store.peers_with_tx:
             self.full_node.full_node_store.peers_with_tx.pop(spend_name)
-        await self.full_node.respond_transaction(tx.transaction, spend_name, peer, test)
+
+        if self.full_node.transaction_queue.qsize() % 100 == 0 and not self.full_node.transaction_queue.empty():
+            self.full_node.log.debug(f"respond_transaction Waiters: {self.full_node.transaction_queue.qsize()}")
+
+        if self.full_node.transaction_queue.full():
+            self.full_node.dropped_tx.add(spend_name)
+            return None
+        # Higher fee means priority is a smaller number, which means it will be handled earlier
+        await self.full_node.transaction_queue.put(
+            (0, TransactionQueueEntry(tx.transaction, tx_bytes, spend_name, peer, test))
+        )
         return None
 
     @api_request
@@ -429,14 +449,19 @@ class FullNodeAPI:
 
     @peer_required
     @api_request
+    @bytes_required
     async def respond_unfinished_block(
         self,
         respond_unfinished_block: full_node_protocol.RespondUnfinishedBlock,
         peer: ws.WSSilicoinConnection,
+        respond_unfinished_block_bytes: bytes = b"",
     ) -> Optional[Message]:
         if self.full_node.sync_store.get_sync_mode():
+            self.log.info("[debug] ignore unfinished block, still in sync")
             return None
-        await self.full_node.respond_unfinished_block(respond_unfinished_block, peer)
+        await self.full_node.respond_unfinished_block(
+            respond_unfinished_block, peer, block_bytes=respond_unfinished_block_bytes
+        )
         return None
 
     @api_request
@@ -713,7 +738,7 @@ class FullNodeAPI:
             block_generator: Optional[BlockGenerator] = None
             additions: Optional[List[Coin]] = []
             removals: Optional[List[Coin]] = []
-            async with self.full_node.blockchain.lock:
+            async with self.full_node._blockchain_lock_high_priority:
                 peak: Optional[BlockRecord] = self.full_node.blockchain.get_peak()
                 if peak is not None:
                     # Finds the last transaction block before this one
@@ -811,6 +836,7 @@ class FullNodeAPI:
             except ValueError as e:
                 self.log.warning(f"Value Error: {e}")
                 return None
+
             if prev_b is None:
                 pool_target = PoolTarget(
                     self.full_node.constants.GENESIS_PRE_FARM_POOL_PUZZLE_HASH,
@@ -898,6 +924,7 @@ class FullNodeAPI:
                 height: uint32 = uint32(prev_b.height + 1)
             else:
                 height = uint32(0)
+            self.log.info(f"[debug] creating block {height} {difficulty_coeff}")
             self.full_node.full_node_store.add_candidate_block(quality_string, height, unfinished_block)
 
             foliage_sb_data_hash = unfinished_block.foliage.foliage_block_data.get_hash()
@@ -955,6 +982,7 @@ class FullNodeAPI:
         block, which only needs a Proof of Time to be finished. If the signature is valid,
         we call the unfinished_block routine.
         """
+        self.log.info("[debug] signed_values")
         candidate_tuple: Optional[Tuple[uint32, UnfinishedBlock]] = self.full_node.full_node_store.get_candidate_block(
             farmer_request.quality_string
         )
@@ -1211,16 +1239,35 @@ class FullNodeAPI:
     @api_request
     async def send_transaction(self, request: wallet_protocol.SendTransaction) -> Optional[Message]:
         spend_name = request.transaction.name()
-        status, error = await self.full_node.respond_transaction(request.transaction, spend_name)
-        error_name = error.name if error is not None else None
-        if status == MempoolInclusionStatus.SUCCESS:
-            response = wallet_protocol.TransactionAck(spend_name, uint8(status.value), error_name)
+
+        await self.full_node.transaction_queue.put(
+            (0, TransactionQueueEntry(request.transaction, None, spend_name, None, False))
+        )
+        # Waits for the transaction to go into the mempool, times out after 45 seconds.
+        status, error = None, None
+        for i in range(450):
+            await asyncio.sleep(0.1)
+            for potential_name, potential_status, potential_error in self.full_node.transaction_responses:
+                if spend_name == potential_name:
+                    status = potential_status
+                    error = potential_error
+                    break
+            if status is not None:
+                break
+        if status is None:
+            response = wallet_protocol.TransactionAck(spend_name, uint8(MempoolInclusionStatus.PENDING), None)
         else:
-            # If if failed/pending, but it previously succeeded (in mempool), this is idempotence, return SUCCESS
-            if self.full_node.mempool_manager.get_spendbundle(spend_name) is not None:
-                response = wallet_protocol.TransactionAck(spend_name, uint8(MempoolInclusionStatus.SUCCESS.value), None)
-            else:
+            error_name = error.name if error is not None else None
+            if status == MempoolInclusionStatus.SUCCESS:
                 response = wallet_protocol.TransactionAck(spend_name, uint8(status.value), error_name)
+            else:
+                # If if failed/pending, but it previously succeeded (in mempool), this is idempotence, return SUCCESS
+                if self.full_node.mempool_manager.get_spendbundle(spend_name) is not None:
+                    response = wallet_protocol.TransactionAck(
+                        spend_name, uint8(MempoolInclusionStatus.SUCCESS.value), None
+                    )
+                else:
+                    response = wallet_protocol.TransactionAck(spend_name, uint8(status.value), error_name)
         msg = make_msg(ProtocolMessageTypes.transaction_ack, response)
         return msg
 

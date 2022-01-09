@@ -1,9 +1,7 @@
-import asyncio
 import logging
 import traceback
-from concurrent.futures.process import ProcessPoolExecutor
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple, Union, Callable
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from silicoin.consensus.block_header_validation import validate_finished_header_block
 from silicoin.consensus.block_record import BlockRecord
@@ -21,10 +19,11 @@ from silicoin.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from silicoin.types.full_block import FullBlock
 from silicoin.types.generator_types import BlockGenerator
 from silicoin.types.header_block import HeaderBlock
+from silicoin.types.unfinished_block import UnfinishedBlock
 from silicoin.util.block_cache import BlockCache
-from silicoin.util.errors import Err
+from silicoin.util.errors import Err, ValidationError
 from silicoin.util.generator_tools import get_block_header, tx_removals_and_additions
-from silicoin.util.ints import uint16, uint64, uint32
+from silicoin.util.ints import uint16, uint32, uint64
 from silicoin.util.streamable import Streamable, dataclass_from_dict, streamable
 
 log = logging.getLogger(__name__)
@@ -133,7 +132,6 @@ async def pre_validate_blocks_multiprocessing(
     constants_json: Dict,
     block_records: BlockchainInterface,
     blocks: Sequence[Union[FullBlock, HeaderBlock]],
-    pool: ProcessPoolExecutor,
     check_filter: bool,
     npc_results: Dict[uint32, NPCResult],
     get_block_generator: Optional[Callable],
@@ -148,7 +146,6 @@ async def pre_validate_blocks_multiprocessing(
     Args:
         check_filter:
         constants_json:
-        pool:
         constants:
         block_records:
         blocks: list of full blocks to validate (must be connected to current chain)
@@ -263,7 +260,7 @@ async def pre_validate_blocks_multiprocessing(
     npc_results_pickled = {}
     for k, v in npc_results.items():
         npc_results_pickled[k] = bytes(v)
-    futures = []
+    results = []
     # Pool of workers to validate blocks concurrently
     for i in range(0, len(blocks), batch_size):
         end_i = min(i + batch_size, len(blocks))
@@ -304,24 +301,48 @@ async def pre_validate_blocks_multiprocessing(
                     hb_pickled = []
                 hb_pickled.append(bytes(block))
 
-        futures.append(
-            asyncio.get_running_loop().run_in_executor(
-                pool,
-                batch_pre_validate_blocks,
-                constants_json,
-                final_pickled,
-                b_pickled,
-                hb_pickled,
-                previous_generators,
-                npc_results_pickled,
-                check_filter,
-                [diff_ssis[j][0] for j in range(i, end_i)],
-                [diff_ssis[j][1] for j in range(i, end_i)],
-            )
+        results += batch_pre_validate_blocks(
+            block_records,
+            constants_json,
+            final_pickled,
+            b_pickled,
+            hb_pickled,
+            previous_generators,
+            npc_results_pickled,
+            check_filter,
+            [diff_ssis[j][0] for j in range(i, end_i)],
+            [diff_ssis[j][1] for j in range(i, end_i)],
         )
     # Collect all results into one flat list
-    return [
-        PreValidationResult.from_bytes(result)
-        for batch_result in (await asyncio.gather(*futures))
-        for result in batch_result
-    ]
+    return [PreValidationResult.from_bytes(result) for result in results]
+
+
+def _run_generator(
+    constants_dict: bytes,
+    unfinished_block_bytes: bytes,
+    block_generator_bytes: bytes,
+) -> Tuple[Optional[Err], Optional[bytes]]:
+    """
+    Runs the CLVM generator from bytes inputs. This is meant to be called under a ProcessPoolExecutor, in order to
+    validate the heavy parts of a block (clvm program) in a different process.
+    """
+    try:
+        constants: ConsensusConstants = dataclass_from_dict(ConsensusConstants, constants_dict)
+        unfinished_block: UnfinishedBlock = UnfinishedBlock.from_bytes(unfinished_block_bytes)
+        assert unfinished_block.transactions_info is not None
+        block_generator: BlockGenerator = BlockGenerator.from_bytes(block_generator_bytes)
+        assert block_generator.program == unfinished_block.transactions_generator
+        npc_result: NPCResult = get_name_puzzle_conditions(
+            block_generator,
+            min(constants.MAX_BLOCK_COST_CLVM, unfinished_block.transactions_info.cost),
+            cost_per_byte=constants.COST_PER_BYTE,
+            safe_mode=False,
+        )
+        if npc_result.error is not None:
+            return Err(npc_result.error), None
+    except ValidationError as e:
+        return e.code, None
+    except Exception:
+        return Err.UNKNOWN, None
+
+    return None, bytes(npc_result)

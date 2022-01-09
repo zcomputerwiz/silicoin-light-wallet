@@ -1,7 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional
 
 from silicoin.consensus.block_record import BlockRecord
-from silicoin.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
 from silicoin.consensus.coinbase import create_puzzlehash_for_pk
 from silicoin.full_node.full_node import FullNode
 from silicoin.full_node.mempool_check_conditions import get_puzzle_and_solution_for_coin
@@ -16,7 +15,7 @@ from silicoin.types.spend_bundle import SpendBundle
 from silicoin.types.unfinished_header_block import UnfinishedHeaderBlock
 from silicoin.util.bech32m import encode_puzzle_hash
 from silicoin.util.byte_types import hexstr_to_bytes
-from silicoin.util.ints import uint32, uint64, uint128
+from silicoin.util.ints import uint32, uint64
 from silicoin.util.ws_message import WsRpcMessage, create_payload_dict
 
 
@@ -129,18 +128,6 @@ class FullNodeRpcApi:
         else:
             sync_progress_height = uint32(0)
 
-        if peak is not None and peak.height > 1:
-            newer_block_hex = peak.header_hash.hex()
-            # Average over the last day
-            header_hash = self.service.blockchain.height_to_hash(uint32(max(1, peak.height - 4608)))
-            assert header_hash is not None
-            older_block_hex = header_hash.hex()
-            space = await self.get_network_space(
-                {"newer_block_header_hash": newer_block_hex, "older_block_header_hash": older_block_hex}
-            )
-        else:
-            space = {"space": uint128(0)}
-
         if self.service.mempool_manager is not None:
             mempool_size = len(self.service.mempool_manager.mempool.spends)
         else:
@@ -151,7 +138,7 @@ class FullNodeRpcApi:
             is_connected = False
         synced = await self.service.synced() and is_connected
 
-        assert space is not None
+        space = await self.service.blockchain.get_peak_network_space(4608, peak)
         response: Dict = {
             "blockchain_state": {
                 "peak": peak,
@@ -164,7 +151,7 @@ class FullNodeRpcApi:
                 },
                 "difficulty": difficulty,
                 "sub_slot_iters": sub_slot_iters,
-                "space": space["space"],
+                "space": space,
                 "mempool_size": mempool_size,
             },
         }
@@ -397,25 +384,8 @@ class FullNodeRpcApi:
         newer_block_bytes = hexstr_to_bytes(newer_block_hex)
         older_block_bytes = hexstr_to_bytes(older_block_hex)
 
-        newer_block = await self.service.block_store.get_block_record(newer_block_bytes)
-        if newer_block is None:
-            raise ValueError("Newer block not found")
-        older_block = await self.service.block_store.get_block_record(older_block_bytes)
-        if older_block is None:
-            raise ValueError("Newer block not found")
-        delta_weight = newer_block.weight - older_block.weight
-
-        delta_iters = newer_block.total_iters - older_block.total_iters
-        weight_div_iters = delta_weight / delta_iters
-        additional_difficulty_constant = self.service.constants.DIFFICULTY_CONSTANT_FACTOR
-        eligible_plots_filter_multiplier = 2 ** self.service.constants.NUMBER_ZERO_BITS_PLOT_FILTER
-        network_space_bytes_estimate = (
-            UI_ACTUAL_SPACE_CONSTANT_FACTOR
-            * weight_div_iters
-            * additional_difficulty_constant
-            * eligible_plots_filter_multiplier
-        )
-        return {"space": uint128(int(network_space_bytes_estimate))}
+        space = await self.service.blockchain.get_network_space(newer_block_bytes, older_block_bytes)
+        return {"space": space}
 
     async def get_coin_records_by_puzzle_hash(self, request: Dict) -> Optional[Dict]:
         """
@@ -575,7 +545,7 @@ class FullNodeRpcApi:
         if block is None:
             raise ValueError(f"Block {header_hash.hex()} not found")
 
-        async with self.service.blockchain.lock:
+        async with self.service._blockchain_lock_low_priority:
             if self.service.blockchain.height_to_hash(block.height) != header_hash:
                 raise ValueError(f"Block at {header_hash.hex()} is no longer in the blockchain (it's in a fork)")
             additions: List[CoinRecord] = await self.service.coin_store.get_coins_added_at_height(block.height)
