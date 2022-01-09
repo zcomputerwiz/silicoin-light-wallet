@@ -2,6 +2,7 @@ import asyncio
 import dataclasses
 import logging
 import math
+import pathlib
 import random
 from concurrent.futures.process import ProcessPoolExecutor
 from typing import Dict, List, Optional, Tuple
@@ -23,7 +24,7 @@ from silicoin.types.blockchain_format.classgroup import ClassgroupElement
 from silicoin.types.blockchain_format.sized_bytes import bytes32
 from silicoin.types.blockchain_format.slots import ChallengeChainSubSlot, RewardChainSubSlot
 from silicoin.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from silicoin.types.blockchain_format.vdf import VDFInfo
+from silicoin.types.blockchain_format.vdf import VDFInfo, VDFProof
 from silicoin.types.end_of_slot_bundle import EndOfSubSlotBundle
 from silicoin.types.header_block import HeaderBlock
 from silicoin.types.weight_proof import (
@@ -806,6 +807,9 @@ def handle_end_of_slot(
         None,
     )
 
+def chunks(some_list, chunk_size):
+    chunk_size = max(1, chunk_size)
+    return (some_list[i : i + chunk_size] for i in range(0, len(some_list), chunk_size))
 
 def compress_segments(full_segment_index, segments: List[SubEpochChallengeSegment]) -> List[SubEpochChallengeSegment]:
     compressed_segments = []
@@ -1173,14 +1177,17 @@ def sub_slot_data_vdf_input(
     return cc_input
 
 
-def _validate_recent_blocks(constants_dict: Dict, recent_chain_bytes: bytes, summaries_bytes: List[bytes]) -> bool:
-    constants, summaries = bytes_to_vars(constants_dict, summaries_bytes)
-    recent_chain: RecentChainData = RecentChainData.from_bytes(recent_chain_bytes)
+def validate_recent_blocks(
+    constants: ConsensusConstants,
+    recent_chain: RecentChainData,
+    summaries: List[SubEpochSummary],
+    shutdown_file_path: Optional[pathlib.Path] = None,
+) -> Tuple[bool, List[bytes]]:
     sub_blocks = BlockCache({})
     first_ses_idx = _get_ses_idx(recent_chain.recent_chain_data)
     ses_idx = len(summaries) - len(first_ses_idx)
     ssi: uint64 = constants.SUB_SLOT_ITERS_STARTING
-    diff: Optional[uint64] = constants.DIFFICULTY_STARTING
+    diff: uint64 = constants.DIFFICULTY_STARTING
     last_blocks_to_validate = 100  # todo remove cap after benchmarks
     for summary in summaries[:ses_idx]:
         if summary.new_sub_slot_iters is not None:
@@ -1189,10 +1196,11 @@ def _validate_recent_blocks(constants_dict: Dict, recent_chain_bytes: bytes, sum
             diff = summary.new_difficulty
 
     ses_blocks, sub_slots, transaction_blocks = 0, 0, 0
-    challenge, prev_challenge = None, None
+    challenge, prev_challenge = recent_chain.recent_chain_data[0].reward_chain_block.pos_ss_cc_challenge_hash, None
     tip_height = recent_chain.recent_chain_data[-1].height
     prev_block_record = None
     deficit = uint8(0)
+    adjusted = False
     for idx, block in enumerate(recent_chain.recent_chain_data):
         required_iters = uint64(0)
         overflow = False
@@ -1213,21 +1221,30 @@ def _validate_recent_blocks(constants_dict: Dict, recent_chain_bytes: bytes, sum
 
         if (challenge is not None) and (prev_challenge is not None):
             overflow = is_overflow_block(constants, block.reward_chain_block.signage_point_index)
+            if not adjusted:
+                prev_block_record = dataclasses.replace(
+                    prev_block_record, deficit=deficit % constants.MIN_BLOCKS_PER_CHALLENGE_BLOCK
+                )
+                assert prev_block_record is not None
+                sub_blocks.add_block_record(prev_block_record)
+                adjusted = True
             deficit = get_deficit(constants, deficit, prev_block_record, overflow, len(block.finished_sub_slots))
             log.debug(f"wp, validate block {block.height}")
             if sub_slots > 2 and transaction_blocks > 11 and (tip_height - block.height < last_blocks_to_validate):
-                required_iters, _, error = validate_finished_header_block(
+                caluclated_required_iters, _, error = validate_finished_header_block(
                     constants, sub_blocks, block, False, diff, ssi, ses_blocks > 2
                 )
                 if error is not None:
                     log.error(f"block {block.header_hash} failed validation {error}")
-                    return False
+                    return False, []
+                assert caluclated_required_iters is not None
+                required_iters = caluclated_required_iters
             else:
                 required_iters = _validate_pospace_recent_chain(
                     constants, block, challenge, diff, overflow, prev_challenge
                 )
                 if required_iters is None:
-                    return False
+                    return False, []
 
         curr_block_ses = None if not ses else summaries[ses_idx - 1]
         block_record = header_block_to_sub_block_record(
@@ -1244,7 +1261,29 @@ def _validate_recent_blocks(constants_dict: Dict, recent_chain_bytes: bytes, sum
             ses_blocks += 1
         prev_block_record = block_record
 
-    return True
+        if shutdown_file_path is not None and not shutdown_file_path.is_file():
+            log.info(f"cancelling block {block.header_hash} validation, shutdown requested")
+            return False, []
+
+    return True, [bytes(sub) for sub in sub_blocks._block_records.values()]
+
+
+def _validate_recent_blocks(constants_dict: Dict, recent_chain_bytes: bytes, summaries_bytes: List[bytes]) -> bool:
+    constants, summaries = bytes_to_vars(constants_dict, summaries_bytes)
+    recent_chain: RecentChainData = RecentChainData.from_bytes(recent_chain_bytes)
+    success, records = validate_recent_blocks(constants, recent_chain, summaries)
+    return success
+
+
+def _validate_recent_blocks_and_get_records(
+    constants_dict: Dict,
+    recent_chain_bytes: bytes,
+    summaries_bytes: List[bytes],
+    shutdown_file_path: Optional[pathlib.Path] = None,
+) -> Tuple[bool, List[bytes]]:
+    constants, summaries = bytes_to_vars(constants_dict, summaries_bytes)
+    recent_chain: RecentChainData = RecentChainData.from_bytes(recent_chain_bytes)
+    return validate_recent_blocks(constants, recent_chain, summaries, shutdown_file_path)
 
 
 def _validate_pospace_recent_chain(
@@ -1589,3 +1628,21 @@ def validate_total_iters(
         total_iters = uint128(prev_b.total_iters - prev_b.cc_ip_vdf_info.number_of_iterations)
     total_iters = uint128(total_iters + sub_slot_data.cc_ip_vdf_info.number_of_iterations)
     return total_iters == sub_slot_data.total_iters
+
+def _validate_vdf_batch(
+    constants_dict, vdf_list: List[Tuple[bytes, bytes, bytes]], shutdown_file_path: Optional[pathlib.Path] = None
+):
+    constants: ConsensusConstants = dataclass_from_dict(ConsensusConstants, constants_dict)
+
+    for vdf_proof_bytes, class_group_bytes, info in vdf_list:
+        vdf = VDFProof.from_bytes(vdf_proof_bytes)
+        class_group = ClassgroupElement.from_bytes(class_group_bytes)
+        vdf_info = VDFInfo.from_bytes(info)
+        if not vdf.is_valid(constants, class_group, vdf_info):
+            return False
+
+        if shutdown_file_path is not None and not shutdown_file_path.is_file():
+            log.info("cancelling VDF validation, shutdown requested")
+            return False
+
+    return True
