@@ -38,7 +38,7 @@ from silicoin.protocols.protocol_message_types import ProtocolMessageTypes
 from silicoin.protocols.wallet_protocol import CoinState, CoinStateUpdate
 from silicoin.server.node_discovery import FullNodePeers
 from silicoin.server.outbound_message import Message, NodeType, make_msg
-from silicoin.server.server import silicoinServer
+from silicoin.server.server import SilicoinServer
 from silicoin.types.blockchain_format.classgroup import ClassgroupElement
 from silicoin.types.blockchain_format.pool_target import PoolTarget
 from silicoin.types.blockchain_format.sized_bytes import bytes32
@@ -266,7 +266,7 @@ class FullNode:
         if peak is not None:
             await self.weight_proof_handler.create_sub_epoch_segments()
 
-    def set_server(self, server: silicoinServer):
+    def set_server(self, server: SilicoinServer):
         self.server = server
         dns_servers = []
         try:
