@@ -28,12 +28,12 @@ from silicoin.types.blockchain_format.vdf import VDFInfo, VDFProof
 from silicoin.types.end_of_slot_bundle import EndOfSubSlotBundle
 from silicoin.types.header_block import HeaderBlock
 from silicoin.types.weight_proof import (
-    RecentChainData,
     SubEpochChallengeSegment,
     SubEpochData,
-    SubEpochSegments,
     SubSlotData,
     WeightProof,
+    SubEpochSegments,
+    RecentChainData,
 )
 from silicoin.util.block_cache import BlockCache
 from silicoin.util.hash import std_hash
@@ -59,6 +59,7 @@ class WeightProofHandler:
         self.constants = constants
         self.blockchain = blockchain
         self.lock = asyncio.Lock()
+        self._num_processes = 4
 
     async def get_proof_of_weight(self, tip: bytes32) -> Optional[WeightProof]:
 
@@ -590,28 +591,40 @@ class WeightProofHandler:
             log.error("failed weight proof sub epoch sample validation")
             return False, uint32(0), []
 
-        executor = ProcessPoolExecutor(1)
+        executor = ProcessPoolExecutor(4)
         constants, summary_bytes, wp_segment_bytes, wp_recent_chain_bytes = vars_to_bytes(
             self.constants, summaries, weight_proof
-        )
-        segment_validation_task = asyncio.get_running_loop().run_in_executor(
-            executor, _validate_sub_epoch_segments, constants, rng, wp_segment_bytes, summary_bytes
         )
 
         recent_blocks_validation_task = asyncio.get_running_loop().run_in_executor(
             executor, _validate_recent_blocks, constants, wp_recent_chain_bytes, summary_bytes
         )
 
-        valid_segment_task = segment_validation_task
+        segments_validated, vdfs_to_validate = _validate_sub_epoch_segments(
+            constants, rng, wp_segment_bytes, summary_bytes
+        )
+        if not segments_validated:
+            return False, uint32(0), []
+
+        vdf_chunks = chunks(vdfs_to_validate, self._num_processes)
+        vdf_tasks = []
+        for chunk in vdf_chunks:
+            byte_chunks = []
+            for vdf_proof, classgroup, vdf_info in chunk:
+                byte_chunks.append((bytes(vdf_proof), bytes(classgroup), bytes(vdf_info)))
+
+            vdf_task = asyncio.get_running_loop().run_in_executor(executor, _validate_vdf_batch, constants, byte_chunks)
+            vdf_tasks.append(vdf_task)
+
+        for vdf_task in vdf_tasks:
+            validated = await vdf_task
+            if not validated:
+                return False, uint32(0), []
+
         valid_recent_blocks_task = recent_blocks_validation_task
         valid_recent_blocks = await valid_recent_blocks_task
         if not valid_recent_blocks:
             log.error("failed validating weight proof recent blocks")
-            return False, uint32(0), []
-
-        valid_segments = await valid_segment_task
-        if not valid_segments:
-            log.error("failed validating weight proof sub epoch segments")
             return False, uint32(0), []
 
         return True, self.get_fork_point(summaries), summaries
@@ -807,9 +820,11 @@ def handle_end_of_slot(
         None,
     )
 
+
 def chunks(some_list, chunk_size):
     chunk_size = max(1, chunk_size)
     return (some_list[i : i + chunk_size] for i in range(0, len(some_list), chunk_size))
+
 
 def compress_segments(full_segment_index, segments: List[SubEpochChallengeSegment]) -> List[SubEpochChallengeSegment]:
     compressed_segments = []
@@ -935,6 +950,7 @@ def _validate_sub_epoch_segments(
     prev_ses: Optional[SubEpochSummary] = None
     segments_by_sub_epoch = map_segments_by_sub_epoch(sub_epoch_segments.challenge_segments)
     curr_ssi = constants.SUB_SLOT_ITERS_STARTING
+    vdfs_to_validate = []
     for sub_epoch_n, segments in segments_by_sub_epoch.items():
         prev_ssi = curr_ssi
         curr_difficulty, curr_ssi = _get_curr_diff_ssi(constants, sub_epoch_n, summaries)
@@ -949,9 +965,10 @@ def _validate_sub_epoch_segments(
             log.error(f"failed reward_chain_hash validation sub_epoch {sub_epoch_n}")
             return False
         for idx, segment in enumerate(segments):
-            valid_segment, ip_iters, slot_iters, slots = _validate_segment(
+            valid_segment, ip_iters, slot_iters, slots, vdf_list = _validate_segment(
                 constants, segment, curr_ssi, prev_ssi, curr_difficulty, prev_ses, idx == 0, sampled_seg_index == idx
             )
+            vdfs_to_validate.extend(vdf_list)
             if not valid_segment:
                 log.error(f"failed to validate sub_epoch {segment.sub_epoch_n} segment {idx} slots")
                 return False
@@ -960,7 +977,7 @@ def _validate_sub_epoch_segments(
             total_slot_iters += slot_iters
             total_slots += slots
             total_ip_iters += ip_iters
-    return True
+    return True, vdfs_to_validate
 
 
 def _validate_segment(
@@ -972,37 +989,40 @@ def _validate_segment(
     ses: Optional[SubEpochSummary],
     first_segment_in_se: bool,
     sampled: bool,
-) -> Tuple[bool, int, int, int]:
+) -> Tuple[bool, int, int, int, List[Tuple[VDFProof, ClassgroupElement, VDFInfo]]]:
     ip_iters, slot_iters, slots = 0, 0, 0
     after_challenge = False
+    to_validate = []
     for idx, sub_slot_data in enumerate(segment.sub_slots):
         if sampled and sub_slot_data.is_challenge():
             after_challenge = True
             required_iters = __validate_pospace(constants, segment, idx, curr_difficulty, ses, first_segment_in_se)
             if required_iters is None:
-                return False, uint64(0), uint64(0), uint64(0)
+                return False, uint64(0), uint64(0), uint64(0), []
             assert sub_slot_data.signage_point_index is not None
             ip_iters = ip_iters + calculate_ip_iters(  # type: ignore
                 constants, curr_ssi, sub_slot_data.signage_point_index, required_iters
             )
-            if not _validate_challenge_block_vdfs(constants, idx, segment.sub_slots, curr_ssi):
-                log.error(f"failed to validate challenge slot {idx} vdfs")
-                return False, uint64(0), uint64(0), uint64(0)
+            vdf_list = _get_challenge_block_vdfs(constants, idx, segment.sub_slots, curr_ssi)
+            to_validate.extend(vdf_list)
         elif sampled and after_challenge:
-            if not _validate_sub_slot_data(constants, idx, segment.sub_slots, curr_ssi):
+            validated, vdf_list = _validate_sub_slot_data(constants, idx, segment.sub_slots, curr_ssi)
+            if not validated:
                 log.error(f"failed to validate sub slot data {idx} vdfs")
-                return False, uint64(0), uint64(0), uint64(0)
+                return False, uint64(0), uint64(0), uint64(0), []
+            to_validate.extend(vdf_list)
         slot_iters = slot_iters + curr_ssi  # type: ignore
         slots = slots + uint64(1)  # type: ignore
-    return True, ip_iters, slot_iters, slots
+    return True, ip_iters, slot_iters, slots, to_validate
 
 
-def _validate_challenge_block_vdfs(
+def _get_challenge_block_vdfs(
     constants: ConsensusConstants,
     sub_slot_idx: int,
     sub_slots: List[SubSlotData],
     ssi: uint64,
-) -> bool:
+) -> List[Tuple[VDFProof, ClassgroupElement, VDFInfo]]:
+    to_validate = []
     sub_slot_data = sub_slots[sub_slot_idx]
     if sub_slot_data.cc_signage_point is not None and sub_slot_data.cc_sp_vdf_info:
         assert sub_slot_data.signage_point_index
@@ -1013,9 +1033,8 @@ def _validate_challenge_block_vdfs(
             sp_input = sub_slot_data_vdf_input(
                 constants, sub_slot_data, sub_slot_idx, sub_slots, is_overflow, prev_ssd.is_end_of_slot(), ssi
             )
-        if not sub_slot_data.cc_signage_point.is_valid(constants, sp_input, sub_slot_data.cc_sp_vdf_info):
-            log.error(f"failed to validate challenge chain signage point 2 {sub_slot_data.cc_sp_vdf_info}")
-            return False
+        to_validate.append((sub_slot_data.cc_signage_point, sp_input, sub_slot_data.cc_sp_vdf_info))
+
     assert sub_slot_data.cc_infusion_point
     assert sub_slot_data.cc_ip_vdf_info
     ip_input = ClassgroupElement.get_default_element()
@@ -1031,10 +1050,9 @@ def _validate_challenge_block_vdfs(
             cc_ip_vdf_info = VDFInfo(
                 sub_slot_data.cc_ip_vdf_info.challenge, ip_vdf_iters, sub_slot_data.cc_ip_vdf_info.output
             )
-    if not sub_slot_data.cc_infusion_point.is_valid(constants, ip_input, cc_ip_vdf_info):
-        log.error(f"failed to validate challenge chain infusion point {sub_slot_data.cc_ip_vdf_info}")
-        return False
-    return True
+    to_validate.append((sub_slot_data.cc_infusion_point, ip_input, cc_ip_vdf_info))
+
+    return to_validate
 
 
 def _validate_sub_slot_data(
@@ -1042,10 +1060,12 @@ def _validate_sub_slot_data(
     sub_slot_idx: int,
     sub_slots: List[SubSlotData],
     ssi: uint64,
-) -> bool:
+) -> Tuple[bool, List[Tuple[VDFProof, ClassgroupElement, VDFInfo]]]:
+
     sub_slot_data = sub_slots[sub_slot_idx]
     assert sub_slot_idx > 0
     prev_ssd = sub_slots[sub_slot_idx - 1]
+    to_validate = []
     if sub_slot_data.is_end_of_slot():
         if sub_slot_data.icc_slot_end is not None:
             input = ClassgroupElement.get_default_element()
@@ -1053,9 +1073,7 @@ def _validate_sub_slot_data(
                 assert prev_ssd.icc_ip_vdf_info
                 input = prev_ssd.icc_ip_vdf_info.output
             assert sub_slot_data.icc_slot_end_info
-            if not sub_slot_data.icc_slot_end.is_valid(constants, input, sub_slot_data.icc_slot_end_info, None):
-                log.error(f"failed icc slot end validation  {sub_slot_data.icc_slot_end_info} ")
-                return False
+            to_validate.append((sub_slot_data.icc_slot_end, input, sub_slot_data.icc_slot_end_info))
         assert sub_slot_data.cc_slot_end_info
         assert sub_slot_data.cc_slot_end
         input = ClassgroupElement.get_default_element()
@@ -1064,7 +1082,7 @@ def _validate_sub_slot_data(
             input = prev_ssd.cc_ip_vdf_info.output
         if not sub_slot_data.cc_slot_end.is_valid(constants, input, sub_slot_data.cc_slot_end_info):
             log.error(f"failed cc slot end validation  {sub_slot_data.cc_slot_end_info}")
-            return False
+            return False, []
     else:
         # find end of slot
         idx = sub_slot_idx
@@ -1075,7 +1093,7 @@ def _validate_sub_slot_data(
                 assert curr_slot.cc_slot_end
                 if curr_slot.cc_slot_end.normalized_to_identity is True:
                     log.debug(f"skip intermediate vdfs slot {sub_slot_idx}")
-                    return True
+                    return True, to_validate
                 else:
                     break
             idx += 1
@@ -1083,10 +1101,7 @@ def _validate_sub_slot_data(
             input = ClassgroupElement.get_default_element()
             if not prev_ssd.is_challenge() and prev_ssd.icc_ip_vdf_info is not None:
                 input = prev_ssd.icc_ip_vdf_info.output
-            if not sub_slot_data.icc_infusion_point.is_valid(constants, input, sub_slot_data.icc_ip_vdf_info, None):
-                log.error(f"failed icc infusion point vdf validation  {sub_slot_data.icc_slot_end_info} ")
-                return False
-
+            to_validate.append((sub_slot_data.icc_infusion_point, input, sub_slot_data.icc_ip_vdf_info))
         assert sub_slot_data.signage_point_index is not None
         if sub_slot_data.cc_signage_point:
             assert sub_slot_data.cc_sp_vdf_info
@@ -1096,10 +1111,8 @@ def _validate_sub_slot_data(
                 input = sub_slot_data_vdf_input(
                     constants, sub_slot_data, sub_slot_idx, sub_slots, is_overflow, prev_ssd.is_end_of_slot(), ssi
                 )
+            to_validate.append((sub_slot_data.cc_signage_point, input, sub_slot_data.cc_sp_vdf_info))
 
-            if not sub_slot_data.cc_signage_point.is_valid(constants, input, sub_slot_data.cc_sp_vdf_info):
-                log.error(f"failed cc signage point vdf validation  {sub_slot_data.cc_sp_vdf_info}")
-                return False
         input = ClassgroupElement.get_default_element()
         assert sub_slot_data.cc_ip_vdf_info
         assert sub_slot_data.cc_infusion_point
@@ -1113,10 +1126,9 @@ def _validate_sub_slot_data(
             cc_ip_vdf_info = VDFInfo(
                 sub_slot_data.cc_ip_vdf_info.challenge, ip_vdf_iters, sub_slot_data.cc_ip_vdf_info.output
             )
-        if not sub_slot_data.cc_infusion_point.is_valid(constants, input, cc_ip_vdf_info):
-            log.error(f"failed cc infusion point vdf validation  {sub_slot_data.cc_slot_end_info}")
-            return False
-    return True
+        to_validate.append((sub_slot_data.cc_infusion_point, input, cc_ip_vdf_info))
+
+    return True, to_validate
 
 
 def sub_slot_data_vdf_input(
@@ -1484,7 +1496,7 @@ def _get_curr_diff_ssi(constants: ConsensusConstants, idx, summaries):
     return curr_difficulty, curr_ssi
 
 
-def vars_to_bytes(constants, summaries, weight_proof):
+def vars_to_bytes(constants: ConsensusConstants, summaries: List[SubEpochSummary], weight_proof: WeightProof):
     constants_dict = recurse_jsonify(dataclasses.asdict(constants))
     wp_recent_chain_bytes = bytes(RecentChainData(weight_proof.recent_chain_data))
     wp_segment_bytes = bytes(SubEpochSegments(weight_proof.sub_epoch_segments))
@@ -1535,13 +1547,13 @@ def _get_ses_idx(recent_reward_chain: List[HeaderBlock]) -> List[int]:
 def get_deficit(
     constants: ConsensusConstants,
     curr_deficit: uint8,
-    prev_block: BlockRecord,
+    prev_block: Optional[BlockRecord],
     overflow: bool,
     num_finished_sub_slots: int,
 ) -> uint8:
     if prev_block is None:
         if curr_deficit >= 1 and not (overflow and curr_deficit == constants.MIN_BLOCKS_PER_CHALLENGE_BLOCK):
-            curr_deficit -= 1
+            curr_deficit = uint8(curr_deficit - 1)
         return curr_deficit
 
     return calculate_deficit(constants, uint32(prev_block.height + 1), prev_block, overflow, num_finished_sub_slots)
@@ -1628,6 +1640,7 @@ def validate_total_iters(
         total_iters = uint128(prev_b.total_iters - prev_b.cc_ip_vdf_info.number_of_iterations)
     total_iters = uint128(total_iters + sub_slot_data.cc_ip_vdf_info.number_of_iterations)
     return total_iters == sub_slot_data.total_iters
+
 
 def _validate_vdf_batch(
     constants_dict, vdf_list: List[Tuple[bytes, bytes, bytes]], shutdown_file_path: Optional[pathlib.Path] = None
