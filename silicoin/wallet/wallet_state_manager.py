@@ -11,7 +11,7 @@ import aiosqlite
 from blspy import G1Element, PrivateKey
 from chiabip158 import PyBIP158
 
-from silicoin.consensus.coinbase import pool_parent_id, farmer_parent_id
+from silicoin.consensus.coinbase import create_puzzlehash_for_pk, pool_parent_id, farmer_parent_id
 from silicoin.consensus.constants import ConsensusConstants
 from silicoin.protocols import wallet_protocol
 from silicoin.protocols.wallet_protocol import PuzzleSolutionResponse, RespondPuzzleSolution, CoinState
@@ -31,7 +31,7 @@ from silicoin.util.db_synchronous import db_synchronous_on
 from silicoin.wallet.cc_wallet.cc_utils import match_cat_puzzle, construct_cc_puzzle
 from silicoin.wallet.cc_wallet.cc_wallet import CCWallet
 from silicoin.wallet.derivation_record import DerivationRecord
-from silicoin.wallet.derive_keys import master_sk_to_wallet_sk, master_sk_to_wallet_sk_unhardened
+from silicoin.wallet.derive_keys import master_sk_to_wallet_sk, master_sk_to_wallet_sk_unhardened, master_sk_to_farmer_sk
 from silicoin.wallet.key_val_store import KeyValStore
 from silicoin.wallet.puzzles.cc_loader import CC_MOD
 from silicoin.wallet.rl_wallet.rl_wallet import RLWallet
@@ -243,7 +243,11 @@ class WalletStateManager:
     async def get_keys(self, puzzle_hash: bytes32) -> Optional[Tuple[G1Element, PrivateKey]]:
         record = await self.puzzle_store.record_for_puzzle_hash(puzzle_hash)
         if record is None:
-            raise ValueError(f"No key for this puzzlehash {puzzle_hash})")
+            # try farmer key
+            private = master_sk_to_farmer_sk(self.private_key)
+            pubkey = private.get_g1()
+            if create_puzzlehash_for_pk(pubkey) != puzzle_hash:
+                raise ValueError(f"No key for this puzzlehash {puzzle_hash})")
         if record.hardened:
             private = master_sk_to_wallet_sk(self.private_key, record.index)
             pubkey = private.get_g1()

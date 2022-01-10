@@ -11,9 +11,10 @@ from silicoin.types.blockchain_format.sized_bytes import bytes32
 from silicoin.types.header_block import HeaderBlock
 from silicoin.types.weight_proof import WeightProof
 from silicoin.util.errors import Err
-from silicoin.util.ints import uint32, uint64
+from silicoin.util.ints import uint32, uint64, uint128
 from silicoin.wallet.key_val_store import KeyValStore
 from silicoin.wallet.wallet_weight_proof_handler import WalletWeightProofHandler
+from silicoin.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
 from decimal import Decimal
 from blspy import G1Element
 
@@ -94,7 +95,7 @@ class WalletBlockchain(BlockchainInterface):
         self.clean_block_records()
 
     async def receive_block(self, block: HeaderBlock) -> Tuple[ReceiveBlockResult, Optional[Err]]:
-        if self.contains_block(block.header_hash):
+        if self.contains_block_in_peak_chain(block.header_hash):
             return ReceiveBlockResult.ALREADY_HAVE_BLOCK, None
         if not self.contains_block(block.prev_header_hash) and block.height > 0:
             return ReceiveBlockResult.DISCONNECTED_BLOCK, None
@@ -108,7 +109,7 @@ class WalletBlockchain(BlockchainInterface):
         else:
             sub_slot_iters = self._sub_slot_iters
             difficulty = self._difficulty
-        required_iters, error = validate_finished_header_block(
+        required_iters, _, error = validate_finished_header_block(
             self.constants, self, block, False, difficulty, sub_slot_iters, False
         )
         if error is not None:
@@ -131,6 +132,11 @@ class WalletBlockchain(BlockchainInterface):
         elif block_record.weight > self._peak.weight:
             if block_record.prev_hash == self._peak.header_hash:
                 fork_height: int = self._peak.height
+            elif not self.contains_block_in_peak_chain(block_record.header_hash) and self.contains_block_in_peak_chain(
+                block_record.prev_hash
+            ):
+                # special case
+                fork_height = block_record.height - 1
             else:
                 fork_height = find_fork_point_in_chain(self, block_record, self._peak)
             await self._rollback_to_height(fork_height)
@@ -194,8 +200,21 @@ class WalletBlockchain(BlockchainInterface):
             return self.block_record(header_hash)
         return None
 
+    def contains_block_in_peak_chain(self, header_hash: bytes32) -> bool:
+        "True if the header_hash is in current chain"
+        block = self.try_block_record(header_hash)
+        if block is None:
+            return False
+        return self._height_to_hash.get(block.height) == header_hash
+
     def block_record(self, header_hash: bytes32) -> BlockRecord:
         return self._block_records[header_hash]
+
+    def try_block_record(self, header_hash: bytes32) -> Optional[BlockRecord]:
+        if self.contains_block(header_hash):
+            return self.block_record(header_hash)
+        return None
+
 
     def add_block_record(self, block_record: BlockRecord):
         self._block_records[block_record.header_hash] = block_record
@@ -216,6 +235,38 @@ class WalletBlockchain(BlockchainInterface):
 
         for header_hash in to_remove:
             del self._block_records[header_hash]
+
+    async def get_network_space(self, newer: bytes32, older: bytes32) -> uint128:
+        newer_block = await self.block_store.get_block_record(newer)
+        if newer_block is None:
+            raise ValueError("Newer block not found")
+        older_block = await self.block_store.get_block_record(older)
+        if older_block is None:
+            raise ValueError("Newer block not found")
+        delta_weight = newer_block.weight - older_block.weight
+
+        delta_iters = newer_block.total_iters - older_block.total_iters
+        weight_div_iters = delta_weight / delta_iters
+        additional_difficulty_constant = self.constants.DIFFICULTY_CONSTANT_FACTOR
+        eligible_plots_filter_multiplier = 2 ** self.constants.NUMBER_ZERO_BITS_PLOT_FILTER
+        network_space_bytes_estimate = (
+            UI_ACTUAL_SPACE_CONSTANT_FACTOR
+            * weight_div_iters
+            * additional_difficulty_constant
+            * eligible_plots_filter_multiplier
+        )
+        return uint128(int(network_space_bytes_estimate))
+
+    async def get_peak_network_space(self, block_range: int) -> uint128:
+        peak = self.get_peak()
+
+        if peak is not None and peak.height > 1:
+            # Average over the last day
+            older_header_hash = self.height_to_hash(uint32(max(1, peak.height - block_range)))
+            assert older_header_hash is not None
+            return await self.get_network_space(peak.header_hash, older_header_hash)
+        else:
+            return uint128(0)
 
     async def get_farmer_difficulty_coeff(
         self, farmer_public_key: G1Element, height: Optional[uint32] = None
