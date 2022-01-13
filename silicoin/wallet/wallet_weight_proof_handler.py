@@ -57,7 +57,7 @@ class WalletWeightProofHandler:
         self._executor.shutdown(wait=True)
 
     async def validate_weight_proof(
-        self, weight_proof: WeightProof, skip_segment_validation=False
+        self, weight_proof: WeightProof, skip_segment_validation=True
     ) -> Tuple[bool, uint32, List[SubEpochSummary], List[BlockRecord]]:
         task: asyncio.Task = asyncio.create_task(
             self._validate_weight_proof_inner(weight_proof, skip_segment_validation)
