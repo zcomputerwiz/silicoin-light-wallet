@@ -861,6 +861,8 @@ def _validate_sub_epoch_summaries(
 
     last_ses = summaries[-1]
     log.debug(f"last ses sub height {last_ses_sub_height}")
+    log.debug(f"last sub epoch summary hash {last_ses_hash}")
+    log.debug(f"last sub epoch summary hash {last_ses.get_hash()}")
     # validate last ses_hash
     if last_ses.get_hash() != last_ses_hash:
         log.error(f"failed to validate ses hashes block height {last_ses_sub_height}. Returning summaries anyway...")
