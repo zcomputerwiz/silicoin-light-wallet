@@ -1,5 +1,4 @@
 import logging
-
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -30,6 +29,7 @@ class PlotInfo:
     plot_public_key: G1Element
     file_size: int
     time_modified: float
+    farmer_public_key: G1Element
 
 
 class PlotRefreshEvents(Enum):

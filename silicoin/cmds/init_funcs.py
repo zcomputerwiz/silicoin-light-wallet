@@ -23,6 +23,7 @@ from silicoin.util.config import (
     save_config,
     unflatten_properties,
 )
+from silicoin.util.ints import uint32
 from silicoin.util.keychain import Keychain
 from silicoin.util.path import mkdir
 from silicoin.util.ssl_check import (
@@ -40,6 +41,7 @@ from silicoin.wallet.derive_keys import (
     _derive_path,
     _derive_path_unhardened,
 )
+from silicoin.cmds.configure import configure
 
 private_node_names = {"full_node", "wallet", "farmer", "harvester", "timelord", "daemon"}
 public_node_names = {"full_node", "wallet", "farmer", "introducer", "timelord"}
@@ -281,7 +283,7 @@ def copy_cert_files(cert_path: Path, new_path: Path):
         check_and_fix_permissions_for_ssl_file(new_path_child, RESTRICT_MASK_KEY_FILE, DEFAULT_PERMISSIONS_KEY_FILE)
 
 
-def init(create_certs: Optional[Path], root_path: Path, fix_ssl_permissions: bool = False):
+def init(create_certs: Optional[Path], root_path: Path, fix_ssl_permissions: bool = False, testnet: bool = False):
     if create_certs is not None:
         if root_path.exists():
             if os.path.isdir(create_certs):
@@ -297,13 +299,16 @@ def init(create_certs: Optional[Path], root_path: Path, fix_ssl_permissions: boo
         else:
             print(f"** {root_path} does not exist. Executing core init **")
             # sanity check here to prevent infinite recursion
-            if silicoin_init(root_path, fix_ssl_permissions=fix_ssl_permissions) == 0 and root_path.exists():
+            if (
+                silicoin_init(root_path, fix_ssl_permissions=fix_ssl_permissions, testnet=testnet) == 0
+                and root_path.exists()
+            ):
                 return init(create_certs, root_path, fix_ssl_permissions)
 
             print(f"** {root_path} was not created. Exiting **")
             return -1
     else:
-        return silicoin_init(root_path, fix_ssl_permissions=fix_ssl_permissions)
+        return silicoin_init(root_path, fix_ssl_permissions=fix_ssl_permissions, testnet=testnet)
 
 
 def silicoin_version_number() -> Tuple[str, str, str, str]:
@@ -365,7 +370,9 @@ def silicoin_full_version_str() -> str:
     return f"{major}.{minor}.{patch}{dev}"
 
 
-def silicoin_init(root_path: Path, *, should_check_keys: bool = False, fix_ssl_permissions: bool = False):
+def silicoin_init(
+    root_path: Path, *, should_check_keys: bool = True, fix_ssl_permissions: bool = False, testnet: bool = False
+):
     """
     Standard first run initialization or migration steps. Handles config creation,
     generation of SSL certs, and setting target addresses (via check_keys).
@@ -385,6 +392,8 @@ def silicoin_init(root_path: Path, *, should_check_keys: bool = False, fix_ssl_p
     if root_path.is_dir() and Path(root_path / "config" / "config.yaml").exists():
         # This is reached if SILICOIN_ROOT is set, or if user has run silicoin init twice
         # before a new update.
+        if testnet:
+            configure(root_path, "", "", "", "", "", "", "", "", testnet="true", peer_connect_timeout="")
         if fix_ssl_permissions:
             fix_ssl(root_path)
         if should_check_keys:
@@ -393,6 +402,8 @@ def silicoin_init(root_path: Path, *, should_check_keys: bool = False, fix_ssl_p
         return -1
 
     create_default_silicoin_config(root_path)
+    if testnet:
+        configure(root_path, "", "", "", "", "", "", "", "", testnet="true", peer_connect_timeout="")
     create_all_ssl(root_path)
     if fix_ssl_permissions:
         fix_ssl(root_path)
