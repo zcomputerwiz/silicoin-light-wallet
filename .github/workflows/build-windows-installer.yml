@@ -120,8 +120,8 @@ jobs:
     - name: Upload Installer to artifacts
       uses: actions/upload-artifact@v2.2.2
       with:
-        name: Windows-Installers
-        path: ${{ github.workspace }}\silicoin-light-gui\release-builds\*.exe
+        name: Windows-Installer
+        path: ${{ github.workspace }}\silicoin-light-gui\release-builds\windows-installer\SilicoinSetup-${{ steps.version_number.outputs.SILICOIN_INSTALLER_VERSION }}.exe
 
 
     # - name: Install AWS CLI
