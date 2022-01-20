@@ -20,7 +20,7 @@ from silicoin.cmds.init_funcs import check_keys, silicoin_init
 from silicoin.cmds.passphrase_funcs import default_passphrase, using_default_passphrase
 from silicoin.daemon.keychain_server import KeychainServer, keychain_commands
 from silicoin.daemon.windows_signal import kill
-from silicoin.plotters.plotters import get_available_plotters
+# from silicoin.plotters.plotters import get_available_plotters
 from silicoin.plotting.util import add_plot_directory
 from silicoin.server.server import ssl_context_for_root, ssl_context_for_server
 from silicoin.ssl.create_ssl import get_mozilla_ca_crt
@@ -570,9 +570,10 @@ class WebSocketServer:
         return response
 
     async def get_plotters(self) -> Dict[str, Any]:
-        plotters: Dict[str, Any] = get_available_plotters(self.root_path)
-        response: Dict[str, Any] = {"success": True, "plotters": plotters}
-        return response
+    #    plotters: Dict[str, Any] = get_available_plotters(self.root_path)
+    #    response: Dict[str, Any] = {"success": True, "plotters": plotters}
+    #    return response
+        return {"success": False, "plotters": {}}
 
     async def _keyring_status_changed(self, keyring_status: Dict[str, Any], destination: str):
         """
