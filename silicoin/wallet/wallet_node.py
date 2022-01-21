@@ -1013,7 +1013,12 @@ class WalletNode:
             ) = await self.wallet_state_manager.weight_proof_handler.validate_weight_proof(weight_proof)
             if valid:
                 self.valid_wp_cache[weight_proof.get_hash()] = valid, fork_point, summaries, block_records
-
+            else:
+                self.log.error(
+                    f"invalid weight proof, num of epochs {len(weight_proof.sub_epochs)}"
+                    f" recent blocks num ,{len(weight_proof.recent_chain_data)}"
+                )
+                self.log.debug(f"{weight_proof}")
         end_validation = time.time()
         self.log.info(f"It took {end_validation - start_validation} time to validate the weight proof")
         return valid, weight_proof, summaries, block_records
